@@ -5,8 +5,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 wc_print_notices();
-
+$offers = get_option( 'offers' );
+$sectors = get_option( 'sectors' );
 do_action( 'woocommerce_before_cart' ); ?>
+
 
 <form action="<?php echo esc_url( wc_get_cart_url() ); ?>" method="post">
 
@@ -58,18 +60,22 @@ do_action( 'woocommerce_before_cart' ); ?>
 						?>
 						<p class="g-fz-11">
 							<?php echo get_post_meta( $cart_item['data']->variation_id, "wccaf_date", true ); ?>&nbsp;
-							<?php echo get_post_meta( $cart_item['data']->variation_id, "wccaf_time", true ); ?>
+							<?php echo get_post_meta( $cart_item['data']->variation_id, "attribute_pa_date", true ); ?>
 						</p>
 					</td>
-					<?php
+					<!-- <?php
 					$variations = WC()->cart->get_item_data($cart_item, true);
 					$parts = explode(PHP_EOL, $variations);
 					$parts = array_filter($parts);
-					foreach($parts as $part) {
+					foreach($variations as $part) {
 						list($key, $value) = explode(':', $part);
-						echo '<td>' . $value . '</td>';
+						echo '<td>' . $part . '</td>';
 					}
-					?>
+					?>-->
+					<!-- <pre><?php print_r($cart_item); ?></pre> -->
+					<td><?php echo $sectors[$cart_item['variation']['attribute_pa_sector']]; ?></td>
+					<td><?php echo $cart_item['variation']['attribute_pa_row']; ?></td>
+					<td><?php echo $cart_item['_custom_options']; ?></td>
 					<td class="product-price" data-title="<?php _e( 'Дата', 'woocommerce' ); ?>">
 						<?php
 							echo apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key );

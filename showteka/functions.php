@@ -35,7 +35,7 @@ function admin_style() {
 
 add_action('wp_enqueue_scripts', 'c2h_styles');
 function c2h_styles() {
-	wp_enqueue_style('style_css', get_template_directory_uri() . '/style.css?v=1');
+	wp_enqueue_style('style_css', get_template_directory_uri() . '/style.css?v=4');
 }
 
 add_action('wp_enqueue_scripts', 'c2h_scripts');
@@ -185,9 +185,12 @@ add_action( 'woocommerce_single_product_summary', 'add_event_data', 10 );
 function add_event_data() {
 	global $product;
 	$attachment_ids = $product->get_gallery_attachment_ids();
-	echo '<div class="where">
-	<q>'. get_post_meta(get_the_ID(), 'wccaf_place', true).'</q>
-	<p class="address">' . get_post_meta(get_the_ID(), 'wccaf_address', true) . '</p>
+	$place = get_post_meta(get_the_ID(), 'wccaf_place', true);
+	echo '<div class="where">';
+	if ($place) {
+		echo '<q>'. $place .'</q>';
+	}
+	'<p class="address">' . get_post_meta(get_the_ID(), 'wccaf_address', true) . '</p>
 	</div>';
 	echo '<div class="action-buttons">'. get_post_meta(get_the_ID(), 'wccaf_date', true) . '</div>';
 	echo the_content();
@@ -232,10 +235,17 @@ function my_variation_price_format( $price, $product ) {
 	return $price;
 }
 
+function sortByOrder($a, $b) {
+  return strcmp($a['attributes']['attribute_pa_date'], $b['attributes']['attribute_pa_date']);
+}
+
 function woocommerce_variable_add_to_cart() {
 	global $product, $post;
 	$sectors = get_option( 'sectors' );
+	$offers = get_option( 'offers' );
 	$variations = $product->get_available_variations();
+	$api_id = get_post_meta( $post->ID, 'wccaf_api_id', true );
+	usort($variations, 'sortByOrder');
 	?>
 	<div id="announce">
 		<table>
@@ -247,40 +257,84 @@ function woocommerce_variable_add_to_cart() {
 				<td></td>
 			</tr>
 			<?php foreach ($variations as $key => $value) :?>
-				<tr data-date="<?php echo get_post_meta( $value['variation_id'], "wccaf_datetime", true ); ?>">
-					<form class="variations_form cart" method="post" enctype="multipart/form-data">
-						<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
-						<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" />
-						<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" />
-						<?php if (!empty($value['attributes'])) {
-							foreach ($value['attributes'] as $attr_key => $attr_value) {
-								?>
-								<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
-								<?php
-							}
-						}
-						?>
-						<!-- <td><?php
-						$attribute_term = get_term_by('slug', $value['attributes']['attribute_pa_sector'], 'pa_sector');
-						if ($attribute_term) {
-							echo $attribute_term->name;
-						}
-						?></td> -->
-						<td><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></td>
-						<td><?php echo $value['attributes']['attribute_pa_row']; ?></td>
-						<td><?php echo $value['attributes']['attribute_pa_place']; ?></td>
-						<td><?php echo $value['display_price']; ?></td>
-						<td>
-							<button type="submit" class="single_add_to_cart_button button alt">
-								<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
-							</button>
-						</td>
-					</form>
+				<tr class="offer-date">
+					<td><?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?></td>
 				</tr>
+				<?php
+				$offer_id = get_post_meta( $value['variation_id'], "wccaf_offer_id", true );
+				foreach ($offers[$api_id][$offer_id] as $item) {
+					?>
+					<tr data-date="<?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?>">
+						<form class="variations_form cart" method="post" enctype="multipart/form-data">
+							<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
+							<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" />
+							<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" />
+							<input type="hidden" name="place" value="<?php echo $item; ?>" />
+							<?php foreach ($value['attributes'] as $attr_key => $attr_value) :?>
+								<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
+							<?php endforeach; ?>
+							<td><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></td>
+							<td><?php echo $value['attributes']['attribute_pa_row']; ?></td>
+							<td><?php echo $item; ?></td>
+							<td><?php echo $value['display_price']; ?></td>
+							<td>
+								<button type="submit" class="single_add_to_cart_button button alt">
+									<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
+								</button>
+							</td>
+						</form>
+					</tr>
+					<?php
+				}
+				?>
 			<?php endforeach; ?>
 		</table>
 		<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/twentytwelve/scripts/dateHandler.js?v=0"></script>
 	</div>
 	<?php
 }
+
+add_filter('woocommerce_add_cart_item_data','wdm_add_item_data',1,10);
+function wdm_add_item_data($cart_item_data, $product_id) {
+
+	global $woocommerce;
+	$new_value = array();
+	$new_value['_custom_options'] = $_POST['place'];
+	return $new_value;
+}
+
+add_filter('woocommerce_get_cart_item_from_session', 'wdm_get_cart_items_from_session', 1, 3 );
+function wdm_get_cart_items_from_session($item,$values,$key) {
+
+	if (array_key_exists( '_custom_options', $values ) ) {
+		$item['_custom_options'] = $values['_custom_options'];
+	}
+	return $item;
+}
+
+/*add_filter('woocommerce_cart_item_name','add_usr_custom_session',1,3);
+function add_usr_custom_session($product_name, $values, $cart_item_key ) {
+
+$return_string = $product_name . "<br />" . $values['_custom_options']['description'];// . "<br />" . print_r($values['_custom_options']);
+return $return_string;
+
+}
+
+add_action('woocommerce_add_order_item_meta','wdm_add_values_to_order_item_meta',1,2);
+function wdm_add_values_to_order_item_meta($item_id, $values) {
+global $woocommerce,$wpdb;
+
+wc_add_order_item_meta($item_id,'item_details',$values['_custom_options']['description']);
+wc_add_order_item_meta($item_id,'customer_image',$values['_custom_options']['another_example_field']);
+wc_add_order_item_meta($item_id,'_hidden_field',$values['_custom_options']['hidden_info']);
+
+}
+
+add_action( 'woocommerce_before_calculate_totals', 'update_custom_price', 1, 1 );
+function update_custom_price( $cart_object ) {
+foreach ( $cart_object->cart_contents as $cart_item_key => $value ) {
+$value['data']->price = $value['_custom_options']['custom_price'];
+}
+}*/
+
 ?>

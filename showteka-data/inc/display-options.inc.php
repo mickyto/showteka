@@ -2,7 +2,6 @@
 function api_data_plugin_settings_page() {
 
   $places = get_option( 'places' );
-
   ?>
   <div class="wrap">
     <h1>Выбор мероприятий</h1>

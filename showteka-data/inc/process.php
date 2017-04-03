@@ -22,27 +22,26 @@ function process_sh_api_options() {
 
       $post_id = wp_insert_post($post);
       $variations = array();
+      $current_offers = array();
       $offer_array = sht_api_request('<RepertoireId>'. $key .'</RepertoireId>', 'GetOfferListByRepertoireId');
       foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
 
         if (in_array($offer->AgentId, get_option( 'api_agents' ))) {
 
-          $offers[(string)$offer->Id] = (array)$offer->SeatList->Item;
+          $current_offers[(string)$offer->Id] = (array)$offer->SeatList->Item;
 
-          //foreach ($offer->SeatList->Item as $seat) {
-            $variation = array(
-              'sector'  => (string) $offer->SectorId,
-              'row'     => (string) $offer->Row,
-              'date'    => (string) $offer->EventDateTime,
-              'places'   => (array) $offer->SeatList->Item,
-              'price'   => (string) $offer->AgentPrice,
-              'offer'   => (string) $offer->Id
-            );
-            array_push($variations, $variation);
-          //}
+          $variation = array(
+            'sector'  => (string) $offer->SectorId,
+            'row'     => (string) $offer->Row,
+            'date'    => (string) $offer->EventDateTime,
+            'price'   => (string) $offer->AgentPrice,
+            'offer'   => (string) $offer->Id
+          );
+          array_push($variations, $variation);
         }
       }
 
+      $offers[$key] = $current_offers;
       update_option( 'offers', $offers );
       add_post_meta( $post_id, 'wccaf_api_id', $key);
       add_post_meta( $post_id, 'wccaf_place', $_POST['place-' . $key]);

@@ -17,67 +17,45 @@ function my_cool_plugin_settings_page() {
 	/*$offers = get_option( 'offers' );
 	$agents = get_option( 'api_agents' );
 	$loop = new WP_Query( array( 'post_type' => 'product', 'posts_per_page' => -1 ) );
-	//$new_offers = array();
+
+	?><pre>loop: <?php print_r($loop->posts); ?></pre><br><?php
 
 	while ( $loop->have_posts() ) : $loop->the_post();
 	$theid = get_the_ID();
 	$api_id = get_post_meta($theid, 'wccaf_api_id', true );
+	echo '<br>the id: ' . $theid . '<br>';
+	echo '<br>api id: ' . $api_id . '<br>';
+
 
 	if ($api_id) {
 
-		$args = array( 'post_type' => 'product_variation', 'numberposts' => -1, 'post_parent' => $theid );
-		$variations = get_posts( $args );
+		//$args = array( 'post_type' => 'product_variation', 'numberposts' => -1, 'post_parent' => $theid );
+		//$variations = get_posts( $args );
 		$offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>', 'GetOfferListByRepertoireId');
-
-		echo 'offer count from api:  ' . count($offer_array->ResponseData->ResponseDataObject->Offer);
 
 		foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
 
 			if (in_array($offer->AgentId, $agents)) {
 
-				//$new_offers[(string)$offer->Id] = (array)$offer->SeatList->Item;
-
-				$seats = array();
-				// if (!array_key_exists((string) $offer->Id, $offers)) {
-				// 	echo 'offer not exists ';
-				// }
-
-
 				if (array_key_exists((string) $offer->Id, $offers) && (array) $offer->SeatList->Item != $offers[(string) $offer->Id]) {
 
 					$offers[(string)$offer->Id] = (array)$offer->SeatList->Item;
-
-					$unknown_seats = (array) $offer->SeatList->Item;
-
-					foreach ($variations as $variation) {
-
-						$seat = get_post_meta($variation->ID, 'attribute_pa_place', true);
-						if (!in_array($seat, $unknown_seats)) {
-							wp_delete_post( $variation->ID, true );
-						}
-						else {
-							$unknown_seats = array_diff($unknown_seats, [$seat]);
-						}
-					}
-					if ($unknown_seats != $offers[(string) $offer->Id]) {
-						echo 'sests not equel ';
-					}
-					$seats = $unknown_seats;
 				}
 				else {
-					$offers[(string)$offer->Id] = (array)$offer->SeatList->Item;
-          $seats = (array) $offer->SeatList->Item;
-        }
-				echo '<br>seats ' . count($seats);
 
-				if (count($seats) !== 0) {
+					$offers[(string)$offer->Id] = (array)$offer->SeatList->Item;
 					$new_variations = array();
-					foreach ($seats as $new_seat) {
-						array_push($new_variations, sub_variation($offer, $new_seat));
-					}
+					$variation = array(
+						'sector'  => (string) $offer->SectorId,
+						'row'     => (string) $offer->Row,
+						'date'    => (string) $offer->EventDateTime,
+						'price'   => (string) $offer->AgentPrice,
+						'offer'   => (string) $offer->Id
+					);
+					array_push($new_variations, $variation);
 					insert_product_attributes($theid, $new_variations);
 					insert_product_variations($theid, $new_variations);
-				}
+        }
 			}
 		}
 	}
@@ -89,8 +67,6 @@ wp_reset_query();*/
 $offers = get_option( 'offers' );
 echo 'offers:   '. count($offers);
 ?>
-<pre>off <?php print_r($offers); ?></pre>
-
 <div class="wrap">
 	<div class="postbox-container">
 		<h1>Наценки</h1>

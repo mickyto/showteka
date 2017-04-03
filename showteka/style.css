@@ -603,6 +603,14 @@ div.related.products { clear: both; }
     border-radius: 0px !important;
 }
 
+#announce table .offer-date {
+    display: none;
+    box-shadow: none;
+    font-size: 14px;
+    color: purple;
+    padding: 10px;
+}
+
 #announce table { width: 730px; }
 #announce table tr {
     display: table;
@@ -821,10 +829,4 @@ ul.wc_payment_methods,
 .address {
   font-size: 13px;
   font-style: italic;
-}
-
-.date-divider {
-    font-size: 14px;
-    padding: 10px;
-    color: purple;
 }
