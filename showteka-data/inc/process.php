@@ -2,14 +2,13 @@
 function process_sh_api_options() {
 
   $options = get_option( 'options' );
+  $offers = get_option( 'offers' );
   $events = count($_POST['event']) != 0 ? array_keys( $_POST['event'] ) : array();
   $removed = array_diff($options, $events);
   $added = array_diff($events, $options);
   update_option( 'options', $events );
 
   if (count($added) !== 0) {
-
-    $offers = get_option( 'offers' );
 
     foreach ($added as $key) {
 
@@ -42,7 +41,7 @@ function process_sh_api_options() {
       }
 
       $offers[$key] = $current_offers;
-      update_option( 'offers', $offers );
+
       add_post_meta( $post_id, 'wccaf_api_id', $key);
       add_post_meta( $post_id, 'wccaf_place', $_POST['place-' . $key]);
       add_post_meta( $post_id, 'wccaf_address', $_POST['address-' . $key]);
@@ -54,6 +53,7 @@ function process_sh_api_options() {
   }
   else if (count($removed) !== 0) {
     foreach ($removed as $key) {
+      unset($offers[$key]);
       $args = array(
         'meta_key' => 'wccaf_api_id',
         'meta_value' => $key,
@@ -65,7 +65,7 @@ function process_sh_api_options() {
       wp_delete_post( $posts[0]->ID, true );
     }
   }
-
+  update_option( 'offers', $offers );
   wp_redirect( admin_url( 'admin.php?page=showteka_api&m=1&re=' . count($removed) . '&ad=' . count($added) ) );
   exit;
 }

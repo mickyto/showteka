@@ -395,7 +395,7 @@ li.product h3 {
 li.product img { margin: 0 !important; }
 a.woocommerce-LoopProduct-link { text-decoration: none; }
 
-.product_type_grouped, .products span.price {
+.contact-us, .products span.price {
     font-family: San-francisco-Medium, sans-serif;
     background: #b13cda;
     color: white !important;
@@ -410,7 +410,7 @@ a.woocommerce-LoopProduct-link { text-decoration: none; }
     display: block;
 }
 
-.product_type_grouped:hover, .products span.price:hover { background: #cc00cc; }
+.contact-us:hover, .products span.price:hover { background: #cc00cc; }
 .products span.price::before { content: "Купить от "; }
 .header-actions a { float: left; }
 
@@ -829,4 +829,14 @@ ul.wc_payment_methods,
 .address {
   font-size: 13px;
   font-style: italic;
+}
+
+.woocommerce div.product div.images img[alt=Заполнитель] {
+    width: 270px;
+    height: 357px;
+}
+
+.woocommerce ul.products li.product a img[alt=Заполнитель] {
+  width: 200px;
+  height: 265px;
 }

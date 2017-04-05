@@ -105,6 +105,14 @@ function wcs_woo_remove_reviews_tab($tabs) {
 	return $tabs;
 }
 
+add_filter('woocommerce_after_shop_loop_item', 'add_contact_us_button', 98);
+function add_contact_us_button() {
+	global $product;
+	if (!$product->is_in_stock()) {
+		echo '<a href="'.get_permalink().'" rel="nofollow" class="outstock_button"><span class="contact-us">Оставить заявку</span></a>';
+	}
+}
+
 // Remove related products
 add_filter('woocommerce_related_products_args','wc_remove_related_products', 10);
 function wc_remove_related_products($args) {
@@ -141,7 +149,7 @@ function add_banners() {
 			<a href="'. $link .'">
 			<img width="200" height="265" src="' . $wimage . '">
 			<h3>'.$sc->name.'</h3>
-			<span class="product_type_grouped">Афиша театра</span>
+			<span class="contact-us">Афиша театра</span>
 			</a></li>';
 		}
 		echo '</ul>';
@@ -152,7 +160,6 @@ function add_banners() {
 	echo '<div class="banner-data" style="display: none">' . do_shortcode('[crellyslider alias="баннер-бол-3"]') . '</div>';
 	echo '<script src="' . $ss_url . '/scripts/insertBanners.js?v=6"></script>';
 }
-
 
 // Customize category page
 add_action( 'woocommerce_archive_description', 'woocommerce_category_image', 2 );
@@ -180,33 +187,6 @@ function category_loop_title() {
 	}
 }
 
-// Add custom product data and action buttons
-add_action( 'woocommerce_single_product_summary', 'add_event_data', 10 );
-function add_event_data() {
-	global $product;
-	$attachment_ids = $product->get_gallery_attachment_ids();
-	$place = get_post_meta(get_the_ID(), 'wccaf_place', true);
-	echo '<div class="where">';
-	if ($place) {
-		echo '<q>'. $place .'</q>';
-	}
-	'<p class="address">' . get_post_meta(get_the_ID(), 'wccaf_address', true) . '</p>
-	</div>';
-	echo '<div class="action-buttons">'. get_post_meta(get_the_ID(), 'wccaf_date', true) . '</div>';
-	echo the_content();
-	if ($attachment_ids) {
-		echo '<div class="action-buttons">
-		<a id="schema" href="' . wp_get_attachment_url($attachment_ids[0]) .'" class="purple-b">Схема зала</a>
-		<a href="#fast-order" class="purple-b btn-further">
-		<span class="triangle"></span>
-		Быстрый заказ
-		</a></div>';
-	}
-	echo '<div style="display: none;">
-	<div class="g-modal" id="fast-order">' . do_shortcode("[ninja_form id=5]") . '</div>
-	</div>';
-}
-
 add_action( 'woocommerce_after_single_product_summary', 'add_popular_events', 50 );
 function add_popular_events() {
 	echo "<div class=\"popular\">
@@ -230,68 +210,96 @@ function add_vertical_banner() {
 
 add_filter( 'woocommerce_variable_price_html', 'my_variation_price_format', 10, 2 );
 function my_variation_price_format( $price, $product ) {
+
 	$prices = array( $product->get_variation_price( 'min', true ), $product->get_variation_price( 'max', true ) );
 	$price = $prices[0] !== $prices[1] ? sprintf( __( '%1$s', 'woocommerce' ), wc_price( $prices[0] ) ) : wc_price( $prices[0] );
 	return $price;
 }
 
 function sortByOrder($a, $b) {
-  return strcmp($a['attributes']['attribute_pa_date'], $b['attributes']['attribute_pa_date']);
+	return strcmp($a['attributes']['attribute_pa_date'], $b['attributes']['attribute_pa_date']);
 }
 
 function woocommerce_variable_add_to_cart() {
 	global $product, $post;
-	$sectors = get_option( 'sectors' );
+
+	$place = get_post_meta(get_the_ID(), 'wccaf_place', true);
+	if ($place) { ?>
+		<div class="where"><q><?php echo $place ?></q>
+			<p class="address"><?php echo get_post_meta(get_the_ID(), 'wccaf_address', true) ?></p>
+		</div>
+		<div class="action-buttons"><?php echo get_post_meta(get_the_ID(), 'wccaf_date', true) ?></div><?php
+	}
+
+	$attachment_ids = $product->get_gallery_attachment_ids();
+	if ($attachment_ids) { ?>
+		<div class="action-buttons">
+			<a id="schema" href="<?php echo wp_get_attachment_url($attachment_ids[0]) ?>" class="purple-b">Схема зала</a>
+		</div><?php
+	}
+	echo the_content();
+
 	$offers = get_option( 'offers' );
-	$variations = $product->get_available_variations();
 	$api_id = get_post_meta( $post->ID, 'wccaf_api_id', true );
-	usort($variations, 'sortByOrder');
-	?>
-	<div id="announce">
-		<table>
-			<tr>
-				<td>СЕКТОР</td>
-				<td>РЯД / ЛОЖА</td>
-				<td>МЕСТО</td>
-				<td>СТОИМОСТЬ</td>
-				<td></td>
-			</tr>
-			<?php foreach ($variations as $key => $value) :?>
-				<tr class="offer-date">
-					<td><?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?></td>
+	if (isset($offers[$api_id])) {
+		$sectors = get_option( 'sectors' );
+		$variations = $product->get_available_variations();
+		usort($variations, 'sortByOrder');
+		?>
+		<div id="announce">
+			<table>
+				<tr>
+					<td>СЕКТОР</td>
+					<td>РЯД / ЛОЖА</td>
+					<td>МЕСТО</td>
+					<td>СТОИМОСТЬ</td>
+					<td></td>
 				</tr>
-				<?php
-				$offer_id = get_post_meta( $value['variation_id'], "wccaf_offer_id", true );
-				foreach ($offers[$api_id][$offer_id] as $item) {
-					?>
-					<tr data-date="<?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?>">
-						<form class="variations_form cart" method="post" enctype="multipart/form-data">
-							<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
-							<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" />
-							<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" />
-							<input type="hidden" name="place" value="<?php echo $item; ?>" />
-							<?php foreach ($value['attributes'] as $attr_key => $attr_value) :?>
-								<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
-							<?php endforeach; ?>
-							<td><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></td>
-							<td><?php echo $value['attributes']['attribute_pa_row']; ?></td>
-							<td><?php echo $item; ?></td>
-							<td><?php echo $value['display_price']; ?></td>
-							<td>
-								<button type="submit" class="single_add_to_cart_button button alt">
-									<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
-								</button>
-							</td>
-						</form>
+				<?php foreach ($variations as $key => $value) :?>
+					<tr class="offer-date">
+						<td><?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?></td>
 					</tr>
 					<?php
-				}
-				?>
-			<?php endforeach; ?>
-		</table>
-		<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/twentytwelve/scripts/dateHandler.js?v=0"></script>
-	</div>
-	<?php
+					$offer_id = get_post_meta( $value['variation_id'], "wccaf_offer_id", true );
+					foreach ($offers[$api_id][$offer_id] as $item) {
+						?>
+						<tr>
+							<form class="variations_form cart" method="post" enctype="multipart/form-data">
+								<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
+								<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" />
+								<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" />
+								<input type="hidden" name="place" value="<?php echo $item; ?>" />
+								<?php foreach ($value['attributes'] as $attr_key => $attr_value) :?>
+									<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
+								<?php endforeach; ?>
+								<td><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></td>
+								<td><?php echo $value['attributes']['attribute_pa_row']; ?></td>
+								<td><?php echo $item; ?></td>
+								<td><?php echo $value['display_price']; ?></td>
+								<td>
+									<button type="submit" class="single_add_to_cart_button button alt">
+										<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
+									</button>
+								</td>
+							</form>
+						</tr>
+						<?php
+					}
+					?>
+				<?php endforeach; ?>
+			</table>
+			<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/twentytwelve/scripts/dateHandler.js?v=0"></script>
+		</div>
+		<?php
+	}
+	else { ?>
+		<div class="action-buttons">
+			<a href="#fast-order" class="purple-b btn-further"><span class="triangle"></span>Оставить заявку</a>
+		</div>
+		<div style="display: none;">
+			<div class="g-modal" id="fast-order"><?php echo do_shortcode("[ninja_form id=5]") ?></div>
+		</div><?php
+	}
 }
 
 add_filter('woocommerce_add_cart_item_data','wdm_add_item_data',1,10);

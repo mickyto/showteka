@@ -24,17 +24,17 @@ include('inc/data-updater.php');
 
 add_filter( 'cron_schedules', 'true_moi_interval');
 function true_moi_interval( $raspisanie ) {
-	$raspisanie['every_10_mins'] = array(
-		'interval' => 600,
-		'display' => 'Каждые десять минут'
+	$raspisanie['every_30_mins'] = array(
+		'interval' => 1800,
+		'display' => 'Каждые тридцать минут'
 	);
 	return $raspisanie;
 }
 
-$parametri = array('egayi@yandex.ru', 'Тест тема', 'Тест сообщение');
+$parametri = array('egayi@yandex.ru', 'Обновление предложений');
 
 if( !wp_next_scheduled('showteka_hook', $parametri ) )
-	wp_schedule_event( time(), 'every_10_mins', 'showteka_hook', $parametri );
+	wp_schedule_event( time(), 'every_30_mins', 'showteka_hook', $parametri );
 
 add_action( 'showteka_hook', 'showteka_update_tickets', 10, 3 );
 
