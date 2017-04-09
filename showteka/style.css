@@ -2,7 +2,7 @@
 Theme Name: Showteka
 Author: Mickyto
 Description: Showteka on WordPress
-Version: 0.0.1
+Version: 100.0.1
 Tags: wordpress
 */
 
@@ -376,11 +376,11 @@ li.product {
     margin: 18px !important;
     width: 200px !important;
     display: inline-block !important;
-    float: none !important;
     transition: all 0.2s linear;
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 2px 7px black;
+    height: 370px;
 }
 
 li.product h3 {
@@ -392,7 +392,10 @@ li.product h3 {
     color: #602060;
 }
 
-li.product img { margin: 0 !important; }
+li.product img {
+    margin: 0 !important;
+    height: 265px !important;
+}
 a.woocommerce-LoopProduct-link { text-decoration: none; }
 
 .contact-us, .products span.price {
@@ -408,6 +411,9 @@ a.woocommerce-LoopProduct-link { text-decoration: none; }
     margin: 0 !important;
     -webkit-font-smoothing: antialiased;
     display: block;
+    position: absolute;
+    bottom: 0;
+    width: 180px;
 }
 
 .contact-us:hover, .products span.price:hover { background: #cc00cc; }

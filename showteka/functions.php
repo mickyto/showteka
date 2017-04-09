@@ -40,15 +40,7 @@ function c2h_styles() {
 
 add_action('wp_enqueue_scripts', 'c2h_scripts');
 function c2h_scripts() {
-	wp_enqueue_script('to_top', get_template_directory_uri() . '/scripts/toTop.js', array('jquery'), '', false );
-}
-
-add_filter('woocommerce_order_item_meta_start', 'add_custom_data_to_email_template');
-function add_custom_data_to_email_template( $item_id ) {
-	$data = wc_get_order_item_meta( $item_id, '_variation_id', true );
-	$date = get_post_meta( $data, "wccaf_date", true );
-	$time = get_post_meta( $data, "wccaf_time", true );
-	echo '<br><small>Дата: ' . $date . '</small><br><small>Время: ' . $time . '</small>';
+	wp_enqueue_script('to_top', get_template_directory_uri() . '/scripts/toTop.js', 'jquery', '', false );
 }
 
 // Hook in
@@ -187,6 +179,7 @@ function category_loop_title() {
 	}
 }
 
+// Display popular product
 add_action( 'woocommerce_after_single_product_summary', 'add_popular_events', 50 );
 function add_popular_events() {
 	echo "<div class=\"popular\">
@@ -208,6 +201,67 @@ function add_vertical_banner() {
 	echo "<div class=\"banner-vert\">" . do_shortcode('[crellyslider alias="баннер-верт-1"]'), do_shortcode('[crellyslider alias="баннер-верт-2"]') . "</div>";
 }
 
+// Write logs to debug.log file on the server
+if ( ! function_exists('write_log')) {
+	function write_log ( $log )  {
+		if ( is_array( $log ) || is_object( $log ) ) {
+			error_log( print_r( $log, true ) );
+		} else {
+			error_log( $log );
+		}
+	}
+}
+
+// Make order throught API
+add_action('woocommerce_checkout_process', 'my_custom_checkout_field_process');
+
+function my_custom_checkout_field_process() {
+
+	$cart_items = WC()->cart->cart_contents;
+
+	foreach ($cart_items as $cart_item) {
+
+		$repertoire_id = get_post_meta( $cart_item['product_id'], "wccaf_api_id", true );
+		$attribute_term = get_term_by('slug', $cart_item['variation']['attribute_pa_date'], 'pa_date');
+
+		$offer_request = sht_api_request('
+		<RepertoireId>99787</RepertoireId>
+		<EventDateTime>'. $attribute_term->name .'</EventDateTime>
+		<SectorId>'. $cart_item['variation']['attribute_pa_sector'] .'</SectorId>
+		<Row>'. $cart_item['variation']['attribute_pa_row'] .'</Row>
+		<Seat>'. $cart_item['_custom_options'] .'</Seat>',
+		'GetOfferIdBySeatInfo');
+
+		if ($offer_request->ResponseResult->Code == 0) {
+			$offer_id = (string) $offer_request->ResponseData->ResponseDataObject->OfferId;
+			$offers = get_option( 'offers' );
+
+			$order = sht_api_request('
+			<OfferId>'. $offer_id .'</OfferId>
+			<SeatList><Item>'. $cart_item['_custom_options'] .'</Item></SeatList>',
+			'MakeOrder');
+
+			if ($order->ResponseResult->Code == 0) {
+
+				if(($key = array_search($cart_item['_custom_options'], $offers[$repertoire_id][$offer_id])) !== false) {
+					unset($offers[$repertoire_id][$offer_id][$key]);
+					update_option( 'offers', $offers );
+				}
+			}
+		}
+		else {
+			wc_add_notice( __( 'Некоторые места или мероприятия недоступны' ), 'error' );
+
+			wp_enqueue_script( 'mark-cart-items', get_template_directory_uri() . '/scripts/cartItemsMarker.js', 'jquery', '', true );
+		}
+	}
+}
+
+
+
+
+
+// Show only lowest price on product list
 add_filter( 'woocommerce_variable_price_html', 'my_variation_price_format', 10, 2 );
 function my_variation_price_format( $price, $product ) {
 
@@ -216,13 +270,24 @@ function my_variation_price_format( $price, $product ) {
 	return $price;
 }
 
+// Sort varitions helper
 function sortByOrder($a, $b) {
 	return strcmp($a['attributes']['attribute_pa_date'], $b['attributes']['attribute_pa_date']);
 }
 
+// Main fuction for showing product information
 function woocommerce_variable_add_to_cart() {
 	global $product, $post;
+	global $woocommerce;
+?>
 
+	<div class="header_cart">
+	    <h5><a href="<?php echo $woocommerce->cart->get_cart_url(); ?>" title="<?php _e('View your shopping cart', 'woothemes'); ?>"><?php _e('Shopping Cart', 'home-shopper'); ?></a></h5>
+	    <div class="cart_contents">
+	        <a class="cart-contents" href="<?php echo $woocommerce->cart->get_cart_url(); ?>" title="<?php _e('View your shopping cart', 'woothemes'); ?>"><?php echo sprintf(_n('%d item', '%d items', $woocommerce->cart->cart_contents_count, 'woothemes'), $woocommerce->cart->cart_contents_count);?> <?php echo $woocommerce->cart->get_cart_total(); ?></a>
+	    </div>
+	</div>
+<?php
 	$place = get_post_meta(get_the_ID(), 'wccaf_place', true);
 	if ($place) { ?>
 		<div class="where"><q><?php echo $place ?></q>
@@ -302,7 +367,23 @@ function woocommerce_variable_add_to_cart() {
 	}
 }
 
-add_filter('woocommerce_add_cart_item_data','wdm_add_item_data',1,10);
+
+
+add_filter('add_to_cart_fragments', 'woocommerce_header_add_to_cart_fragment');
+
+function woocommerce_header_add_to_cart_fragment( $fragments )
+{
+    global $woocommerce;
+    ob_start(); ?>
+
+    <a class="cart-contents" href="<?php echo $woocommerce->cart->get_cart_url(); ?>" title="<?php _e('View your shopping cart', 'woothemes'); ?>"><?php echo sprintf(_n('%d item', '%d items', $woocommerce->cart->cart_contents_count, 'woothemes'), $woocommerce->cart->cart_contents_count);?> <?php echo $woocommerce->cart->get_cart_total(); ?></a>
+
+    <?php
+    $fragments['a.cart-contents'] = ob_get_clean();
+    return $fragments;
+}
+
+add_filter('woocommerce_add_cart_item_data', 'wdm_add_item_data',1,10);
 function wdm_add_item_data($cart_item_data, $product_id) {
 
 	global $woocommerce;
@@ -320,29 +401,11 @@ function wdm_get_cart_items_from_session($item,$values,$key) {
 	return $item;
 }
 
-/*add_filter('woocommerce_cart_item_name','add_usr_custom_session',1,3);
-function add_usr_custom_session($product_name, $values, $cart_item_key ) {
-
-$return_string = $product_name . "<br />" . $values['_custom_options']['description'];// . "<br />" . print_r($values['_custom_options']);
-return $return_string;
-
-}
-
 add_action('woocommerce_add_order_item_meta','wdm_add_values_to_order_item_meta',1,2);
 function wdm_add_values_to_order_item_meta($item_id, $values) {
-global $woocommerce,$wpdb;
-
-wc_add_order_item_meta($item_id,'item_details',$values['_custom_options']['description']);
-wc_add_order_item_meta($item_id,'customer_image',$values['_custom_options']['another_example_field']);
-wc_add_order_item_meta($item_id,'_hidden_field',$values['_custom_options']['hidden_info']);
-
+	global $woocommerce,$wpdb;
+	$sectors = get_option( 'sectors' );
+	wc_update_order_item_meta( $item_id, 'sector', $sectors[$values['variation']['attribute_pa_sector']] );
+	wc_add_order_item_meta($item_id,'place',$values['_custom_options']);
 }
-
-add_action( 'woocommerce_before_calculate_totals', 'update_custom_price', 1, 1 );
-function update_custom_price( $cart_object ) {
-foreach ( $cart_object->cart_contents as $cart_item_key => $value ) {
-$value['data']->price = $value['_custom_options']['custom_price'];
-}
-}*/
-
 ?>

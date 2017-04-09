@@ -59,20 +59,20 @@ do_action( 'woocommerce_before_cart' ); ?>
 							}
 						?>
 						<p class="g-fz-11">
-							<?php echo get_post_meta( $cart_item['data']->variation_id, "wccaf_date", true ); ?>&nbsp;
-							<?php echo get_post_meta( $cart_item['data']->variation_id, "attribute_pa_date", true ); ?>
+							<?php
+							$months = array('января', 'февраля', 'марта', 'апреля',
+							'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря');
+
+							$date_str = get_post_meta( $cart_item['data']->variation_id, "attribute_pa_date", true );
+							$readable_date = (int) substr($date_str,8,2) . ' '
+							. $months[(int) substr($date_str,5,2)] . ' '
+							. substr($date_str,0,4) . ' | '
+							. substr($date_str,11,2) . ':'
+							. substr($date_str,13,2);
+							echo $readable_date;
+							?>
 						</p>
 					</td>
-					<!-- <?php
-					$variations = WC()->cart->get_item_data($cart_item, true);
-					$parts = explode(PHP_EOL, $variations);
-					$parts = array_filter($parts);
-					foreach($variations as $part) {
-						list($key, $value) = explode(':', $part);
-						echo '<td>' . $part . '</td>';
-					}
-					?>-->
-					<!-- <pre><?php print_r($cart_item); ?></pre> -->
 					<td><?php echo $sectors[$cart_item['variation']['attribute_pa_sector']]; ?></td>
 					<td><?php echo $cart_item['variation']['attribute_pa_row']; ?></td>
 					<td><?php echo $cart_item['_custom_options']; ?></td>

@@ -10,8 +10,13 @@ function sht_api_request($request_data_object, $action_name) {
   <RequestDataObject>'. $request_data_object .'</RequestDataObject>
   </RequestData>
   </Request>';
-  $client = new SoapClient('http://api.zriteli.ru/index.php?wsdl');
-  $stage_response = $client->__soapCall($action_name, array($stage_xml));
-  return simplexml_load_string($stage_response);
+
+  try {
+    $client = new SoapClient('http://api.zriteli.ru/index.php?wsdl', array("trace" => 1, "exception" => 0));
+    $stage_response = $client->__soapCall($action_name, array($stage_xml));
+    return simplexml_load_string($stage_response);
+  } catch (SoapFault $exception) {
+    return $exception->getMessage();
+  }
 }
 ?>

@@ -15,6 +15,7 @@ function insert_product_variations($post_id, $variations) {
   foreach ($variations as $index => $variation) {
 
     $variation_post = array(
+      'post_author'   => 1,
       'post_status'   => 'publish',
       'post_parent'   => $post_id,
       'post_type'     => 'product_variation',

@@ -18,6 +18,8 @@
     <meta name="author" content="">
     <title><?php wp_title( '|', true, 'right' ); ?></title>
 
+    <link rel="shortcut icon" href="<?php echo get_stylesheet_directory_uri(); ?>/favicon.ico" />
+
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script src="<?php bloginfo('template_directory'); ?>/jqueryui/jquery-ui.min.js"></script>
@@ -126,4 +128,3 @@
                 $('#header-bg').css('height', 340).css('box-shadow', 'inset 0px -320px 74px -207px #fff')
             }
         </script>
-
