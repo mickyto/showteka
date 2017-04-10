@@ -3,6 +3,9 @@
 add_theme_support('menus');
 add_theme_support('widgets');
 
+
+
+
 add_action( 'after_setup_theme', 'woocommerce_support' );
 function woocommerce_support() {
 	add_theme_support( 'woocommerce' );
@@ -257,10 +260,6 @@ function my_custom_checkout_field_process() {
 	}
 }
 
-
-
-
-
 // Show only lowest price on product list
 add_filter( 'woocommerce_variable_price_html', 'my_variation_price_format', 10, 2 );
 function my_variation_price_format( $price, $product ) {
@@ -278,16 +277,7 @@ function sortByOrder($a, $b) {
 // Main fuction for showing product information
 function woocommerce_variable_add_to_cart() {
 	global $product, $post;
-	global $woocommerce;
-?>
 
-	<div class="header_cart">
-	    <h5><a href="<?php echo $woocommerce->cart->get_cart_url(); ?>" title="<?php _e('View your shopping cart', 'woothemes'); ?>"><?php _e('Shopping Cart', 'home-shopper'); ?></a></h5>
-	    <div class="cart_contents">
-	        <a class="cart-contents" href="<?php echo $woocommerce->cart->get_cart_url(); ?>" title="<?php _e('View your shopping cart', 'woothemes'); ?>"><?php echo sprintf(_n('%d item', '%d items', $woocommerce->cart->cart_contents_count, 'woothemes'), $woocommerce->cart->cart_contents_count);?> <?php echo $woocommerce->cart->get_cart_total(); ?></a>
-	    </div>
-	</div>
-<?php
 	$place = get_post_meta(get_the_ID(), 'wccaf_place', true);
 	if ($place) { ?>
 		<div class="where"><q><?php echo $place ?></q>
@@ -320,40 +310,41 @@ function woocommerce_variable_add_to_cart() {
 					<td>СТОИМОСТЬ</td>
 					<td></td>
 				</tr>
-				<?php foreach ($variations as $key => $value) :?>
-					<tr class="offer-date">
-						<td><?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?></td>
-					</tr>
-					<?php
-					$offer_id = get_post_meta( $value['variation_id'], "wccaf_offer_id", true );
-					foreach ($offers[$api_id][$offer_id] as $item) {
-						?>
-						<tr>
-							<form class="variations_form cart" method="post" enctype="multipart/form-data">
-								<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
-								<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" />
-								<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" />
-								<input type="hidden" name="place" value="<?php echo $item; ?>" />
-								<?php foreach ($value['attributes'] as $attr_key => $attr_value) :?>
-									<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
-								<?php endforeach; ?>
-								<td><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></td>
-								<td><?php echo $value['attributes']['attribute_pa_row']; ?></td>
-								<td><?php echo $item; ?></td>
-								<td><?php echo $value['display_price']; ?></td>
-								<td>
-									<button type="submit" class="single_add_to_cart_button button alt">
-										<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
-									</button>
-								</td>
-							</form>
-						</tr>
-						<?php
-					}
-					?>
-				<?php endforeach; ?>
 			</table>
-			<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/twentytwelve/scripts/dateHandler.js?v=0"></script>
+			<?php foreach ($variations as $key => $value) :?>
+				<div class="offer-date">
+					<div><?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?></div>
+				</div>
+				<?php
+				$offer_id = get_post_meta( $value['variation_id'], "wccaf_offer_id", true );
+				foreach ($offers[$api_id][$offer_id] as $item) {
+					?>
+					<div class="var">
+						<form class="variations_form cart" onsubmit='event.preventDefault(); return addToCart(this)' method="post" enctype="multipart/form-data">
+							<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
+							<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" >
+							<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" >
+							<input type="hidden" name="attribute_pa_place" value="<?php echo $item; ?>" >
+							<?php foreach ($value['attributes'] as $attr_key => $attr_value) :?>
+								<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
+							<?php endforeach; ?>
+							<div class="table-item1"><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></div>
+							<div class="table-item2"><?php echo $value['attributes']['attribute_pa_row']; ?></div>
+							<div class="table-item3"><?php echo $item; ?></div>
+							<div class="table-item4"><?php echo $value['display_price']; ?></div>
+							<div class="table-item5">
+								<button type="submit" class="single_add_to_cart_button button alt">
+									<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
+								</button>
+							</div>
+						</form>
+					</div>
+					<?php
+				}
+				?>
+			<?php endforeach; ?>
+
+			<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/showteka/scripts/dateHandler.js"></script>
 		</div>
 		<?php
 	}
@@ -368,19 +359,24 @@ function woocommerce_variable_add_to_cart() {
 }
 
 
+add_action( 'woocommerce_init', 'remove_message_after_add_to_cart', 99);
+
+function remove_message_after_add_to_cart(){
+    if( isset( $_GET['add-to-cart'] ) ){
+        wc_clear_notices();
+    }
+}
 
 add_filter('add_to_cart_fragments', 'woocommerce_header_add_to_cart_fragment');
+function woocommerce_header_add_to_cart_fragment( $fragments ) {
+global $woocommerce;
+ob_start(); ?>
 
-function woocommerce_header_add_to_cart_fragment( $fragments )
-{
-    global $woocommerce;
-    ob_start(); ?>
+<a class="cart-contents" href="<?php echo $woocommerce->cart->get_cart_url(); ?>"><?php echo sprintf(_n('%d', '%d', $woocommerce->cart->cart_contents_count, 'woothemes'), $woocommerce->cart->cart_contents_count);?></a>
 
-    <a class="cart-contents" href="<?php echo $woocommerce->cart->get_cart_url(); ?>" title="<?php _e('View your shopping cart', 'woothemes'); ?>"><?php echo sprintf(_n('%d item', '%d items', $woocommerce->cart->cart_contents_count, 'woothemes'), $woocommerce->cart->cart_contents_count);?> <?php echo $woocommerce->cart->get_cart_total(); ?></a>
-
-    <?php
-    $fragments['a.cart-contents'] = ob_get_clean();
-    return $fragments;
+<?php
+$fragments['a.cart-contents'] = ob_get_clean();
+return $fragments;
 }
 
 add_filter('woocommerce_add_cart_item_data', 'wdm_add_item_data',1,10);

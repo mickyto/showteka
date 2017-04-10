@@ -16,6 +16,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="<?php echo get_bloginfo( 'description' ); ?>">
     <meta name="author" content="">
+    <meta name="yandex-verification" content="e20a6e335087761d" />
     <title><?php wp_title( '|', true, 'right' ); ?></title>
 
     <link rel="shortcut icon" href="<?php echo get_stylesheet_directory_uri(); ?>/favicon.ico" />
@@ -55,16 +56,10 @@
                 <div class="atclear"></div>
             </div>
             <div class="b-cart g-fz-11" id="cart_block">
-                <input id="item-count" type="hidden" value="<?php echo WC()->cart->get_cart_contents_count(); ?>">
-
+              <p><a class="cart-contents" href="<?php echo WC()->cart->get_cart_url(); ?>"><?php echo sprintf(_n('%d', '%d', WC()->cart->cart_contents_count, 'woothemes'), WC()->cart->cart_contents_count);?></a></p>
                 <script>
-                    var countValue = document.getElementById('item-count').value;
+                    var countValue = document.getElementsByClassName('cart-contents')[0].value;
                     if (countValue != 0) {
-                        var countElement = document.createElement('P');
-                        var count = document.createTextNode(countValue);
-                        countElement.appendChild(count);
-                        document.getElementById("cart_block").appendChild(countElement);
-
                         var linkElement = document.createElement('A');
                         var linkText = document.createTextNode('Перейти в корзину');
                         linkElement.setAttribute('href', '<?php echo wc_get_cart_url(); ?>');

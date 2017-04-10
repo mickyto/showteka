@@ -152,6 +152,8 @@ table { border-collapse: collapse; }
     border-radius: 10px;
 }
 
+.b-cart a.cart-contents { color: purple }
+
 .b-share a, .b-cart a:hover, .b-share a:hover, .b-share a:hover .g-a-fake { color: #b06eb7; }
 .b-cart a, .b-share .g-a-fake { color: #fff; }
 .b-cart {
@@ -609,7 +611,7 @@ div.related.products { clear: both; }
     border-radius: 0px !important;
 }
 
-#announce table .offer-date {
+#announce .offer-date {
     display: none;
     box-shadow: none;
     font-size: 14px;
@@ -618,22 +620,14 @@ div.related.products { clear: both; }
 }
 
 #announce table { width: 730px; }
-#announce table tr {
-    display: table;
+#announce table {
     box-shadow: 0px 1px 6px -2px black;
     border-radius: 5px;
-    margin-bottom: 5px;
-}
-#announce tr:first-child {
     margin-bottom: 10px;
     font-weight: 900;
     height: 50px;
 }
-#announce tr th {
-    padding: 15px;
-    width: 92px;
-}
-#announce tr td {
+#announce td {
     padding: 10px;
     width: 126px
 }
@@ -648,8 +642,9 @@ div.related.products { clear: both; }
     transition: all 0.2s linear;
     font-size: 12px;
     letter-spacing: -1px;
+    float: none;
 }
-#announce button:hover {
+#announce .added, #announce button:hover {
     background: #B74ED0;
     color: #fff;
 }
@@ -845,4 +840,39 @@ ul.wc_payment_methods,
 .woocommerce ul.products li.product a img[alt=Заполнитель] {
   width: 200px;
   height: 265px;
+}
+
+.var {
+  display: table-row;
+}
+
+.var div {
+  float: left;
+  padding: 10px;
+}
+
+.table-item1 {
+  width: 126px;
+}
+
+.table-item2 {
+  width: 126px;
+}
+
+.table-item3 {
+  width: 126px;
+}
+
+.table-item4 {
+  width: 116px;
+}
+
+.table-item5 {
+  width: 136px;
+}
+
+.variations_form.cart {
+    box-shadow: 0px 1px 6px -2px black;
+    border-radius: 5px;
+    margin-bottom: 5px !important;
 }
