@@ -8,10 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     <h3><?php _e( 'Billing &amp; Shipping', 'woocommerce' ); ?></h3>
 
-    <?php else : ?>
-
-    <h3>Оформление заказа</h3>
-
     <?php endif; ?>
 
     <?php do_action( 'woocommerce_before_checkout_billing_form', $checkout ); ?>

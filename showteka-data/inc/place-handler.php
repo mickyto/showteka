@@ -5,11 +5,15 @@ function process_sh_update_sectors() {
   $sector_ids = array_keys($sectors);
 
   foreach ($_POST['places'] as $place => $place_name) {
-    $sector_array = sht_api_request('<StageId>'. $place .'</StageId>', 'GetSectorListByStageId');
+    $stage_array = sht_api_request('<PlaceId>'. $place .'</PlaceId>', 'GetStageListByPlaceId');
+    foreach ($stage_array->ResponseData->ResponseDataObject->Stage as $stage) {
 
-    foreach ($sector_array->ResponseData->ResponseDataObject->Sector as $sector) {
-      if (!in_array($sector->Id, $sector_ids)) {
-        $sectors[(string) $sector->Id] = (string) $sector->Name;
+      $sector_array = sht_api_request('<StageId>'. (string)$stage->Id .'</StageId>', 'GetSectorListByStageId');
+
+      foreach ($sector_array->ResponseData->ResponseDataObject->Sector as $sector) {
+        if (!in_array($sector->Id, $sector_ids)) {
+          $sectors[(string) $sector->Id] = (string) $sector->Name;
+        }
       }
     }
   }

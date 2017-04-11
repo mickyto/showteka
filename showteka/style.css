@@ -27,9 +27,7 @@ body {
     font-family: San-francisco-Regular, sans-serif;
 }
 
-q {
-    quotes: "\00ab" "\00bb" "\2039" "\203A";
-}
+q { quotes: "\00ab" "\00bb" "\2039" "\203A"; }
 
 div[role=main] { width: 970px; }
 
@@ -66,7 +64,7 @@ div[role=main] { width: 970px; }
 }
 #header {
     height: 300px;
-    z-index: 1000;
+    z-index: 1;
     position: relative;
     width: 970px;
     margin: 0 auto;
@@ -136,7 +134,7 @@ table { border-collapse: collapse; }
     margin-top: 35px
 }
 
-#cart_block p {
+#cart_block a.cart-contents {
     position: absolute;
     font-size: 16px;
     background: #fff;
@@ -740,7 +738,6 @@ p.return-to-shop,
 ul.wc_payment_methods,
 .woocommerce-shipping-fields h3,
 #billing_country_field,
-.checkout-button.button.alt.wc-forward,
 .actions {
     display: none;
 }
