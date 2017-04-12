@@ -3,9 +3,6 @@
 add_theme_support('menus');
 add_theme_support('widgets');
 
-
-
-
 add_action( 'after_setup_theme', 'woocommerce_support' );
 function woocommerce_support() {
 	add_theme_support( 'woocommerce' );
@@ -82,8 +79,12 @@ remove_action( 'woocommerce_single_product_summary', 'woocommerce_variable_add_t
 remove_action( 'woocommerce_before_main_content', 'woocommerce_breadcrumb', 20, 0 );
 remove_action('woocommerce_sidebar', 'woocommerce_get_sidebar', 10);
 remove_action( 'woocommerce_checkout_order_review', 'woocommerce_order_review', 10 );
-remove_action( 'woocommerce_after_shop_loop_item', 'woocommerce_template_loop_add_to_cart' );
-//remove_action( 'woocommerce_single_product_summary', 'woocommerce_template_single_excerpt', 20 );
+remove_action( 'woocommerce_after_shop_loop_item_title', 'woocommerce_template_loop_price', 10 );
+
+add_filter( 'woocommerce_product_add_to_cart_text', 'woo_custom_product_add_to_cart_text' );
+function woo_custom_product_add_to_cart_text() {
+    return __( 'Купить билеты', 'woocommerce' );
+}
 
 // Remove reviews
 add_filter('woocommerce_product_tabs', 'wcs_woo_remove_reviews_tab', 98);
@@ -208,6 +209,21 @@ if ( ! function_exists('write_log')) {
 	}
 }
 
+add_action('woocommerce_calculate_totals', 'calculate_totals', 10, 1);
+function calculate_totals($Cart) {
+	$sht_total = $Cart->cart_contents_total;
+
+	foreach ($Cart->cart_contents as $key => $value) {
+		$price = $value['variation']['attribute_pa_price'];
+		$sht_total += $price;
+		$Cart->cart_contents[$key]['data']->price = $price;
+		$Cart->cart_contents[$key]['line_total'] = $price;
+		$Cart->cart_contents[$key]['line_subtotal'] = $price;
+	}
+	$Cart->cart_contents_total = $sht_total;
+	return $Cart;
+}
+
 // Make order throught API
 add_action('woocommerce_checkout_process', 'my_custom_checkout_field_process');
 
@@ -217,37 +233,38 @@ function my_custom_checkout_field_process() {
 
 	foreach ($cart_items as $cart_item) {
 
-		$repertoire_id = get_post_meta( $cart_item['product_id'], "wccaf_api_id", true );
+		$sectors = get_option( 'sectors' );
+		$repertoire_id = get_post_meta( $cart_item['product_id'], 'wccaf_api_id', true );
 		$attribute_term = get_term_by('slug', $cart_item['variation']['attribute_pa_date'], 'pa_date');
+		$sector_id = array_search($cart_item['variation']['attribute_pa_sector'], $sectors);
 
 		$offer_request = sht_api_request('
-		<RepertoireId>99787</RepertoireId>
+		<RepertoireId>'. $repertoire_id .'</RepertoireId>
 		<EventDateTime>'. $attribute_term->name .'</EventDateTime>
-		<SectorId>'. $cart_item['variation']['attribute_pa_sector'] .'</SectorId>
+		<SectorId>'. $sector_id .'</SectorId>
 		<Row>'. $cart_item['variation']['attribute_pa_row'] .'</Row>
-		<Seat>'. $cart_item['_custom_options'] .'</Seat>',
+		<Seat>'. $cart_item['variation']['attribute_pa_place'] .'</Seat>',
 		'GetOfferIdBySeatInfo');
 
 		if ($offer_request->ResponseResult->Code == 0) {
 			$offer_id = (string) $offer_request->ResponseData->ResponseDataObject->OfferId;
-			$offers = get_option( 'offers' );
+			//$offers = get_option( 'offers' );
 
-			$order = sht_api_request('
-			<OfferId>'. $offer_id .'</OfferId>
-			<SeatList><Item>'. $cart_item['_custom_options'] .'</Item></SeatList>',
-			'MakeOrder');
+			// $order = sht_api_request('
+			// <OfferId>'. $offer_id .'</OfferId>
+			// <SeatList><Item>'. $cart_item['_custom_options'] .'</Item></SeatList>',
+			// 'MakeOrder');
 
-			if ($order->ResponseResult->Code == 0) {
-
-				if(($key = array_search($cart_item['_custom_options'], $offers[$repertoire_id][$offer_id])) !== false) {
-					unset($offers[$repertoire_id][$offer_id][$key]);
-					update_option( 'offers', $offers );
-				}
-			}
+			// if ($order->ResponseResult->Code == 0) {
+			//
+			// 	if(($key = array_search($cart_item['_custom_options'], $offers[$repertoire_id][$offer_id])) !== false) {
+			// 		unset($offers[$repertoire_id][$offer_id][$key]);
+			// 		update_option( 'offers', $offers );
+			// 	}
+			// }
 		}
 		else {
 			wc_add_notice( __( 'Некоторые места или мероприятия недоступны' ), 'error' );
-
 			wp_enqueue_script( 'mark-cart-items', get_template_directory_uri() . '/scripts/cartItemsMarker.js', 'jquery', '', true );
 		}
 	}
@@ -260,11 +277,6 @@ function my_variation_price_format( $price, $product ) {
 	$prices = array( $product->get_variation_price( 'min', true ), $product->get_variation_price( 'max', true ) );
 	$price = $prices[0] !== $prices[1] ? sprintf( __( '%1$s', 'woocommerce' ), wc_price( $prices[0] ) ) : wc_price( $prices[0] );
 	return $price;
-}
-
-// Sort varitions helper
-function sortByOrder($a, $b) {
-	return strcmp($a['attributes']['attribute_pa_date'], $b['attributes']['attribute_pa_date']);
 }
 
 // Main fuction for showing product information
@@ -287,12 +299,10 @@ function woocommerce_variable_add_to_cart() {
 	}
 	echo the_content();
 
-	$offers = get_option( 'offers' );
 	$api_id = get_post_meta( $post->ID, 'wccaf_api_id', true );
-	if (isset($offers[$api_id])) {
+	if ($api_id) {
 		$sectors = get_option( 'sectors' );
-		$variations = $product->get_available_variations();
-		usort($variations, 'sortByOrder');
+		$terms = wp_get_post_terms( $post->ID, 'pa_date' );
 		?>
 		<div id="announce">
 			<table>
@@ -304,40 +314,58 @@ function woocommerce_variable_add_to_cart() {
 					<td></td>
 				</tr>
 			</table>
-			<?php foreach ($variations as $key => $value) :?>
-				<div class="offer-date">
-					<div><?php echo get_post_meta( $value['variation_id'], 'attribute_pa_date', true ); ?></div>
-				</div>
-				<?php
-				$offer_id = get_post_meta( $value['variation_id'], "wccaf_offer_id", true );
-				foreach ($offers[$api_id][$offer_id] as $item) {
-					?>
-					<div class="var">
-						<form class="variations_form cart" onsubmit='event.preventDefault(); return addToCart(this)' method="post" enctype="multipart/form-data">
-							<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
-							<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>" >
-							<input type="hidden" name="variation_id" class="variation_id" value="<?php echo $value['variation_id']?>" >
-							<input type="hidden" name="attribute_pa_place" value="<?php echo $item; ?>" >
-							<?php foreach ($value['attributes'] as $attr_key => $attr_value) :?>
-								<input type="hidden" name="<?php echo $attr_key?>" value="<?php echo $attr_value?>">
-							<?php endforeach; ?>
-							<div class="table-item1"><?php echo $sectors[$value['attributes']['attribute_pa_sector']]?></div>
-							<div class="table-item2"><?php echo $value['attributes']['attribute_pa_row']; ?></div>
-							<div class="table-item3"><?php echo $item; ?></div>
-							<div class="table-item4"><?php echo $value['display_price']; ?></div>
-							<div class="table-item5">
-								<button type="submit" class="single_add_to_cart_button button alt">
-									<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
-								</button>
-							</div>
-						</form>
-					</div>
-					<?php
-				}
-				?>
-			<?php endforeach; ?>
+			<?php
+			foreach ($terms as $value) {
 
-			<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/showteka/scripts/dateHandler.js"></script>
+				$months = array('января', 'февраля', 'марта', 'апреля',
+				'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря');
+				$date = $value->slug;
+				$readable_date = (int) substr($date,8,2) . ' '
+				. $months[(int) substr($date,5,2)] . ' '
+				. substr($date,0,4) . ' | '
+				. substr($date,11,2) . ':'
+				. substr($date,13,2);
+
+				$offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>
+				<EventDateTime>'. $value->name .'</EventDateTime>',
+				'GetOfferListByEventInfo');
+
+				if (count($terms) > 1) { ?>
+					<div class="offer-date"><?php echo $readable_date ?></div><?php
+				}
+				foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
+
+					if (in_array($offer->AgentId, get_option( 'api_agents' ))) {
+
+						$sht_price = testRange($offer->AgentPrice);
+						$sector = $sectors[(string)$offer->SectorId];
+
+						foreach ((array)$offer->SeatList->Item as $item) { ?>
+
+							<div class="var">
+								<form class="variations_form cart" method="post" enctype="multipart/form-data">
+									<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
+									<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>">
+									<input type="hidden" name="attribute_pa_date" value="<?php echo $value->slug; ?>">
+									<input type="hidden" name="attribute_pa_sector" value="<?php echo $sector; ?>">
+									<input type="hidden" name="attribute_pa_row" value="<?php echo $offer->Row; ?>">
+									<input type="hidden" name="attribute_pa_place" value="<?php echo $item; ?>">
+									<input type="hidden" name="attribute_pa_price" value="<?php echo $sht_price; ?>">
+									<div class="table-item1"><?php echo $sector; ?></div>
+									<div class="table-item2"><?php echo $offer->Row; ?></div>
+									<div class="table-item3"><?php echo $item; ?></div>
+									<div class="table-item4"><?php echo $sht_price; ?></div>
+									<div class="table-item5">
+										<button type="submit" class="single_add_to_cart_button button alt">
+											<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
+										</button>
+									</div>
+								</form>
+							</div><?php
+						}
+					}
+				}
+			} ?>
 		</div>
 		<?php
 	}
@@ -366,30 +394,4 @@ function woocommerce_header_add_to_cart_fragment( $fragments ) {
 	$fragments['a.cart-contents'] = ob_get_clean();
 	return $fragments;
 }
-
-// add_filter('woocommerce_add_cart_item_data', 'wdm_add_item_data',1,10);
-// function wdm_add_item_data($cart_item_data, $product_id) {
-//
-// 	global $woocommerce;
-// 	$new_value = array();
-// 	$new_value['_custom_options'] = $_POST['place'];
-// 	return $new_value;
-// }
-//
-// add_filter('woocommerce_get_cart_item_from_session', 'wdm_get_cart_items_from_session', 1, 3 );
-// function wdm_get_cart_items_from_session($item,$values,$key) {
-//
-// 	if (array_key_exists( '_custom_options', $values ) ) {
-// 		$item['_custom_options'] = $values['_custom_options'];
-// 	}
-// 	return $item;
-// }
-//
-// add_action('woocommerce_add_order_item_meta','wdm_add_values_to_order_item_meta',1,2);
-// function wdm_add_values_to_order_item_meta($item_id, $values) {
-// 	global $woocommerce,$wpdb;
-// 	$sectors = get_option( 'sectors' );
-// 	wc_update_order_item_meta( $item_id, 'sector', $sectors[$values['variation']['attribute_pa_sector']] );
-// 	wc_add_order_item_meta($item_id,'place',$values['_custom_options']);
-// }
 ?>

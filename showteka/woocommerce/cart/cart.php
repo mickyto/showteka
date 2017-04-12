@@ -3,12 +3,8 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
-
 wc_print_notices();
-$offers = get_option( 'offers' );
-$sectors = get_option( 'sectors' );
 do_action( 'woocommerce_before_cart' ); ?>
-
 
 <form action="<?php echo esc_url( wc_get_cart_url() ); ?>" method="post">
 
@@ -18,11 +14,11 @@ do_action( 'woocommerce_before_cart' ); ?>
 	<thead>
 		<tr>
 			<th class="product-remove">&nbsp;</th>
-			<th class="product-name">Мероприятие</th>
-			<th class="">Сектор</th>
-			<th class="">Ряд / ложе</th>
+			<th>Мероприятие</th>
+			<th>Сектор</th>
+			<th>Ряд / ложе</th>
 			<th>Место</th>
-			<th class="product-price">Цена</th>
+			<th>Цена</th>
 		</tr>
 	</thead>
 	<tbody>
@@ -32,7 +28,6 @@ do_action( 'woocommerce_before_cart' ); ?>
 		foreach ( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
 			$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 			$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
-
 
 			if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 				$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
@@ -64,7 +59,7 @@ do_action( 'woocommerce_before_cart' ); ?>
 							$months = array('января', 'февраля', 'марта', 'апреля',
 							'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря');
 
-							$date_str = get_post_meta( $cart_item['data']->variation_id, "attribute_pa_date", true );
+							$date_str = $cart_item['variation']['attribute_pa_date'];
 							$readable_date = (int) substr($date_str,8,2) . ' '
 							. $months[(int) substr($date_str,5,2)] . ' '
 							. substr($date_str,0,4) . ' | '
@@ -74,19 +69,14 @@ do_action( 'woocommerce_before_cart' ); ?>
 							?>
 						</p>
 					</td>
-					<td><?php echo $sectors[$cart_item['variation']['attribute_pa_sector']]; ?></td>
+					<td><?php echo $cart_item['variation']['attribute_pa_sector']; ?></td>
 					<td><?php echo $cart_item['variation']['attribute_pa_row']; ?></td>
 					<td><?php echo $cart_item['variation']['attribute_pa_place']; ?></td>
-					<td class="product-price" data-title="<?php _e( 'Дата', 'woocommerce' ); ?>">
-						<?php
-							echo apply_filters( 'woocommerce_cart_item_price', WC()->cart->get_product_price( $_product ), $cart_item, $cart_item_key );
-						?>
-					</td>
+					<td><?php echo $cart_item['variation']['attribute_pa_price']; ?> р</td>
 				</tr>
 				<?php
 			}
 		}
-
 		do_action( 'woocommerce_cart_contents' );
 		?>
 		<tr>
