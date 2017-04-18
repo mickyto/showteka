@@ -55,18 +55,7 @@ do_action( 'woocommerce_before_cart' ); ?>
 							}
 						?>
 						<p class="g-fz-11">
-							<?php
-							$months = array('января', 'февраля', 'марта', 'апреля',
-							'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря');
-
-							$date_str = $cart_item['variation']['attribute_pa_date'];
-							$readable_date = (int) substr($date_str,8,2) . ' '
-							. $months[(int) substr($date_str,5,2)] . ' '
-							. substr($date_str,0,4) . ' | '
-							. substr($date_str,11,2) . ':'
-							. substr($date_str,13,2);
-							echo $readable_date;
-							?>
+							<?php echo format_date($cart_item['variation']['attribute_pa_date']); ?>
 						</p>
 					</td>
 					<td><?php echo $cart_item['variation']['attribute_pa_sector']; ?></td>

@@ -19,8 +19,11 @@
     <meta name="yandex-verification" content="e20a6e335087761d" />
     <title><?php wp_title( '|', true, 'right' ); ?></title>
 
-    <link rel="shortcut icon" href="<?php echo get_stylesheet_directory_uri(); ?>/favicon.ico" />
-
+    <!-- <link rel="shortcut icon" href="<?php echo get_stylesheet_directory_uri(); ?>/favicon.ico" /> -->
+    <link rel="icon" href="http://xn--80ajpouf7a.xn--p1ai/wp-content/uploads/cropped-g4753-32x32.png" sizes="32x32" />
+<link rel="icon" href="http://xn--80ajpouf7a.xn--p1ai/wp-content/uploads/cropped-g4753-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon-precomposed" href="http://xn--80ajpouf7a.xn--p1ai/wp-content/uploads/cropped-g4753-180x180.png" />
+<meta name="msapplication-TileImage" content="http://xn--80ajpouf7a.xn--p1ai/wp-content/uploads/cropped-g4753-270x270.png" />
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script src="<?php bloginfo('template_directory'); ?>/jqueryui/jquery-ui.min.js"></script>
@@ -32,9 +35,7 @@
     <script src="<?php bloginfo('template_directory');?>/fancybox/main.js?version=5"></script>
     <link rel="stylesheet" href="<?php bloginfo('template_directory'); ?>/jqueryui/jquery-ui.min.css">
 
-
     <?php wp_head(); ?>
-
 </head>
 <body <?php body_class(); ?>>
 <div id="wrapper">
@@ -93,15 +94,15 @@
                     </span>
                 </a>
                 <div class="action-form">
-                    <form role="search" method="get" id="searchform" action="/" >
-                        <input type="text" class="search-action" value="<?php get_search_query() ?>" placeholder="Название мероприятия" name="s" id="s" />
-                        <button id="searchsubmit" >Поиск</button>
+                    <form role="search" method="get" id="searchform" action="/s-result/">
+                        <input type="text" class="search-action" placeholder="Название мероприятия" name="title" />
+                        <button>Поиск</button>
                     </form>
                 </div>
                 <div class="action-form">
-                    <form action="" method="post">
-                        <input type="text" placeholder="Выберите дату" id="datepicker-u"/>
-                        <input type="text" hidden name="selected_date" id="datepicker"/>
+                    <form role="search" action="/s-result/" id="searchform" method="get">
+                        <input type="text" class="search-action" placeholder="Выберите дату" id="datepicker-u"/>
+                        <input type="text" class="search-action" hidden name="date" id="datepicker"/>
                         <button>Поиск</button>
                     </form>
                     <script src="<?php bloginfo('template_directory'); ?>/scripts/datepicker.js"></script>

@@ -3,7 +3,7 @@ $(document).ready(function() {
         $("#datepicker-u").datepicker({
             "dateFormat" : "d MM, yy",
             "altField" : "#datepicker",
-            "altFormat" : "dd-mm-yy",
+            "altFormat" : "yy-mm-dd",
             "duration" : 200,
             "onSelect" : function () {
                 $("#datepicker-u").attr("placeholder", "")
@@ -37,5 +37,3 @@ $(document).ready(function() {
         }());
     });
 });
-
-
