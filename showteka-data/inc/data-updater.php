@@ -2,82 +2,88 @@
 function showteka_update_tickets( $to, $subject ) {
 
   $start = microtime(true);
-  $offers = get_option( 'offers' );
+  $options = get_option( 'options' );
   $loop = new WP_Query( array( 'post_type' => 'product', 'posts_per_page' => -1 ) );
   $msg_info = array(
     'api_offers' => 0,
     'sht_offers' => 0,
-    'changed'    => 0,
     'added'      => 0,
-    'deleted'    => 0
+    'added_vars' => 0
   );
 
   while ( $loop->have_posts() ) : $loop->the_post();
   $theid = get_the_ID();
   $api_id = get_post_meta($theid, 'wccaf_api_id', true );
+  $msg_info['api_offers']++;
 
   if ($api_id) {
 
-    $api_offer_ids = array();
-    $offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>', 'GetOfferListByRepertoireId');
+    $msg_info['sht_offers']++;
 
-    foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
+    if (!in_array($api_id, $options)) {
+      $options[$api_id] = get_the_title();
+      update_option( 'options', $options );
+    }
 
-      $api_offer_ids[] = (string) $offer->Id;
-      $msg_info['api_offers']++;
-      if (in_array($offer->AgentId, get_option( 'api_agents' ))) {
-        $msg_info['sht_offers']++;
+    $args = array(
+      'post_type'     => 'product_variation',
+      'numberposts'   => -1,
+      'post_parent'   => $theid
+    );
+    $variations = get_posts( $args );
 
-        if (array_key_exists((string) $offer->Id, $offers[$api_id])) {
-          if ((array) $offer->SeatList->Item != $offers[$api_id][(string) $offer->Id]) {
-            $msg_info['changed']++;
-            $offers[$api_id][(string)$offer->Id] = (array)$offer->SeatList->Item;
-          }
-        }
-        else {
-          $msg_info['added']++;
-          $offers[$api_id][(string)$offer->Id] = (array)$offer->SeatList->Item;
-          $new_variations = array();
-          $variation = array(
-            'sector'  => (string) $offer->SectorId,
-            'row'     => (string) $offer->Row,
-            'date'    => (string) $offer->EventDateTime,
-            'price'   => (string) $offer->AgentPrice,
-            'offer'   => (string) $offer->Id
-          );
-          array_push($new_variations, $variation);
-          insert_product_attributes($theid, $new_variations);
-          insert_product_variations($theid, $new_variations);
-        }
+    if (count($variations) == 0) {
+
+      $msg_info['added']++;
+
+      $date_attribute = array( // Set this attributes array to a key to using the prefix 'pa'
+        'pa_date' => array(
+          'name'         => 'pa_date',
+          'value'        => '',
+          'is_visible'   => '0',
+          'is_variation' => '1',
+          'is_taxonomy'  => '1'
+        )
+      );
+      update_post_meta( $theid, '_product_attributes', $date_attribute); // Attach the above array to the new posts meta data key '_product_attributes'
+
+      $dates = array();
+      $offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>', 'GetOfferListByRepertoireId');
+      if (!count($offer_array->ResponseData->ResponseDataObject->Offer)) continue;
+      
+      foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
+        $dates[] = (string) $offer->EventDateTime;
+      }
+
+      $dates = array_unique($dates);
+      wp_set_object_terms($theid, $dates, 'pa_date', true);
+
+      foreach ($dates as $date) {
+        $msg_info['added_vars']++;
+        $variation_post = array(
+          'post_author'   => 1,
+          'post_status'   => 'publish',
+          'post_parent'   => $theid,
+          'post_type'     => 'product_variation',
+        );
+
+        $variation_post_id = wp_insert_post($variation_post);
+
+        $date_term = get_term_by('name', $date, 'pa_date');
+
+        add_post_meta($variation_post_id, 'attribute_pa_date', $date_term->slug);
+        add_post_meta($variation_post_id, '_price', '0');
+        add_post_meta($variation_post_id, '_regular_price', '0');
       }
     }
-
-    $removed_offers = array_diff( array_keys( $offers[$api_id] ), $api_offer_ids );
-    $msg_info['deleted'] = $msg_info['deleted'] + count($removed_offers);
-    if (count($removed_offers) != 0) {
-			foreach ($removed_offers as $key) {
-				unset($offers[$api_id][$key]);
-
-        $args = array(
-          'meta_key' => 'wccaf_offer_id',
-          'meta_value' => $key,
-          'post_type' => 'product_variation',
-        );
-        $posts = get_posts($args);
-        wp_delete_post( $posts[0]->ID, true );
-			}
-    }
-    update_option( 'offers', $offers );
   }
 endwhile;
 $time_elapsed_secs = microtime(true) - $start;
 $msg = '<table border = "1" cellpadding="10">
-<tr><td>Всего мероприятий из апи</td><td>' . count($offers) . '</td><tr>
-<tr><td>Мероприятия из апи</td><td>' . $msg_info['api_offers'] . '</td><tr>
-<tr><td>Предложения для шоутеки</td><td>' . $msg_info['sht_offers'] . '</td><tr>
-<tr><td>Измененные предложения</td><td>' . $msg_info['changed'] . '</td><tr>
-<tr><td>Удаленные предложения</td><td>' . $msg_info['deleted'] . '</td><tr>
-<tr><td>Добавленные предложения</td><td>' . $msg_info['added'] . '</td><tr>
+<tr><td>Всего мероприятий из апи</td><td>' . $msg_info['api_offers'] . '</td><tr>
+<tr><td>Мероприятия из апи</td><td>' . $msg_info['sht_offers'] . '</td><tr>
+<tr><td>Мероприятия без дат</td><td>' . $msg_info['added'] . '</td><tr>
+<tr><td>Добавленные даты</td><td>' . $msg_info['added_vars'] . '</td><tr>
 <tr><td>Время работы скрипта</td><td>' . $time_elapsed_secs . '</td><tr></table>';
 $headers = array('Content-Type: text/html; charset=UTF-8');
 wp_mail( $to, $subject, $msg, $headers );

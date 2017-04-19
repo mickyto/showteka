@@ -17,10 +17,10 @@ include('inc/process.php');
 include('inc/place-handler.php');
 include('inc/display-options.inc.php');
 include('inc/menus.inc.php');
-include('inc/insert-attributes.php');
-include('inc/insert-variations.php');
 include('inc/api-request.php');
 include('inc/data-updater.php');
+include('my-prices.php');
+include('inc/my-tickets.php');
 
 add_filter( 'cron_schedules', 'true_moi_interval');
 function true_moi_interval( $raspisanie ) {
@@ -42,3 +42,4 @@ add_action( 'showteka_hook', 'showteka_update_tickets', 10, 3 );
 add_action('admin_menu', 'api_data_plugin_menu');
 add_action('admin_post_sh_create_products_from_api', 'process_sh_api_options' );
 add_action('admin_post_sh_handle_places', 'process_sh_update_sectors' );
+add_action('admin_post_sh_set_prices_for_my_tickets', 'process_sh_my_prices' );

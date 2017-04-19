@@ -45,7 +45,7 @@ function api_data_plugin_settings_page() {
                       <ul>
                         <?php
                         $repertoire_array = sht_api_request('<StageId>'.$stage->Id.'</StageId>', 'GetRepertoireListByStageId');                        foreach ($repertoire_array->ResponseData->ResponseDataObject->Repertoire as $value) {                          ?>                          <li>
-                            <input type="checkbox" name="event[<?php echo $value->Id; ?>]" value="<?php echo $value->Name; ?>" <?php checked( in_array( (string)$value->Id, $options ) ); ?> />
+                            <input type="checkbox" name="event[<?php echo $value->Id; ?>]" value='<?php echo $value->Name; ?>' <?php checked(isset($options[(string)$value->Id])); ?> />
                             <input type="hidden" name="stage-<?php echo $value->Id; ?>" value="<?php echo $stage->Id; ?>" />
                             <input type="hidden" name="place-<?php echo $value->Id; ?>" value="<?php echo $place_name; ?>" />
                             <input type="hidden" name="address-<?php echo $value->Id; ?>" value="<?php echo $stage->Address; ?>" />

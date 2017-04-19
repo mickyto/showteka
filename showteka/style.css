@@ -377,7 +377,8 @@ li.product {
     border: 2px solid #fff;
     margin: 18px !important;
     width: 200px !important;
-    display: inline-grid;
+    display: inline-block;
+    box-sizing: border-box;
     transition: all 0.2s linear;
     border-radius: 10px;
     overflow: hidden;

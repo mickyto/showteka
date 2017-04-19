@@ -35,7 +35,7 @@ function admin_style() {
 
 add_action('wp_enqueue_scripts', 'c2h_styles');
 function c2h_styles() {
-	wp_enqueue_style('style_css', get_template_directory_uri() . '/style.css?v=4');
+	wp_enqueue_style('style_css', get_template_directory_uri() . '/style.css?v=44');
 }
 
 add_action('wp_enqueue_scripts', 'c2h_scripts');
@@ -157,15 +157,15 @@ function add_vertical_banner() {
 }
 
 // Write logs to debug.log file on the server
-// if ( ! function_exists('write_log')) {
-// 	function write_log ( $log )  {
-// 		if ( is_array( $log ) || is_object( $log ) ) {
-// 			error_log( print_r( $log, true ) );
-// 		} else {
-// 			error_log( $log );
-// 		}
-// 	}
-// }
+if ( ! function_exists('write_log')) {
+	function write_log ( $log )  {
+		if ( is_array( $log ) || is_object( $log ) ) {
+			error_log( print_r( $log, true ) );
+		} else {
+			error_log( $log );
+		}
+	}
+}
 
 add_action('woocommerce_calculate_totals', 'calculate_totals', 10, 1);
 function calculate_totals($Cart) {
@@ -232,6 +232,18 @@ function custom_pre_get_posts_query( $q ) {
 			'terms' => 'main'
 		)));
 	}
+}
+
+function testRange($int){
+
+  $ranges  = get_option( 'prices' );
+  foreach ($ranges as $range => $addition) {
+    $limits = explode("-", $range);
+    if ($limits[0] <= $int && $int < $limits[1]) {
+      return $int + $addition;
+    }
+  }
+  return $int;
 }
 
 function place_handler($places) {
@@ -368,8 +380,6 @@ function woocommerce_variable_add_to_cart() {
 
 	if (isset($_GET['date']) || (count($terms) == 1 && !isset($_GET['offer']))) {
 
-		echo 'date ' . $_GET['date'];
-
 		$date_str = isset($_GET['date']) ? $_GET['date'] : $terms[0]->name;
 		$offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>
 		<EventDateTime>'. $date_str .'</EventDateTime>',
@@ -408,6 +418,7 @@ function woocommerce_variable_add_to_cart() {
 }
 
 $sectors = get_option( 'sectors' );
+$my_prices = get_option( 'my-prices' );
 
 if (isset($_GET['date']) || (count($terms) == 1 && !isset($_GET['offer']))) { ?>
 
@@ -417,7 +428,8 @@ if (isset($_GET['date']) || (count($terms) == 1 && !isset($_GET['offer']))) { ?>
 	foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
 		if (in_array($offer->AgentId, get_option( 'api_agents' ))) {
 			$sector = $sectors[(string)$offer->SectorId];
-			$sht_price = testRange($offer->AgentPrice);
+			$sht_price = isset($my_prices[$api_id][(string)$offer->Id]) ? $my_prices[$api_id][(string)$offer->Id] : testRange($offer->AgentPrice);
+
 			?>
 			<div class="var">
 				<div class="shadow">
@@ -440,7 +452,7 @@ else if (isset($_GET['offer'])) { ?>
 	$offer_object = sht_api_request('<OfferId>'. $_GET['offer'] .'</OfferId>', 'GetOfferById');
 	$offer = $offer_object->ResponseData->ResponseDataObject->Offer;
 	$sector = $sectors[(string)$offer->SectorId];
-	$sht_price = testRange($offer->AgentPrice);
+	$sht_price = isset($my_prices[$api_id][(string)$offer->Id]) ? $my_prices[$api_id][(string)$offer->Id] : testRange($offer->AgentPrice);
 
 	foreach ($offer->SeatList->Item as $item) { ?>
 

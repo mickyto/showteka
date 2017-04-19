@@ -2,7 +2,7 @@
 function process_sh_api_options() {
 
   $options = get_option( 'options' );
-  $events = count($_POST['event']) != 0 ? array_keys( $_POST['event'] ) : array();
+  $events = count($_POST['event']) != 0 ? $_POST['event'] : array();
   $removed = array_diff($options, $events);
   $added = array_diff($events, $options);
   update_option( 'options', $events );
