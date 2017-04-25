@@ -2,8 +2,13 @@
 #menu-posts {
     display: none;
 }
-.stage {
+.sh-section {
     padding: 10px;
+    background:lightgray;
+}
+
+.stage p {
+  margin: 0px;
 }
 .stage h3, .stage p.id {
     display: inline
@@ -15,11 +20,36 @@
     -webkit-column-gap: 40px; /* Chrome, Safari, Opera */
     -moz-column-gap: 40px; /* Firefox */
     column-gap: 40px;
-    -webkit-column-rule: 1px solid lightblue; /* Chrome, Safari, Opera */
-    -moz-column-rule: 1px solid lightblue; /* Firefox */
-    column-rule: 1px solid lightblue;
+    -webkit-column-rule: 1px solid lightskyblue; /* Chrome, Safari, Opera */
+    -moz-column-rule: 1px solid lightskyblue; /* Firefox */
+    column-rule: 1px solid lightskyblue;
 }
 .stage li {
     display: inline-block;
     padding: 5px;
+}
+
+.event input {
+  width: 130px;
+  margin: 5px;
+  height: 35px;
+}
+
+.my-tickets table {
+  margin: 5px;
+}
+
+.sh-section h2 {
+  display: inline-block;
+  margin-right: 30px;
+}
+
+.my-tickets td {
+  width: 150px;
+  padding: 10px;
+  text-align: center
+}
+
+.my-tickets td:nth-child(1) {
+  width: 300px;
 }

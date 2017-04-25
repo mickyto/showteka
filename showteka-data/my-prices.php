@@ -5,8 +5,6 @@ function my_prices_plugin_settings_page() {
   $sectors = get_option( 'sectors' );
   $my_prices = get_option( 'my-prices' );
 
-
-
   ?>
   <div class="wrap">
     <div class="postbox-container">
@@ -18,6 +16,7 @@ function my_prices_plugin_settings_page() {
         <?php
       }
       ?>
+      <div class="sh-section">
       <h2>Выберите мероприятия, чтобы изменять цены на билеты</h2>
       <form method="post" action="admin-post.php">
         <?php
@@ -32,7 +31,7 @@ function my_prices_plugin_settings_page() {
               ?>
               <li>
                 <input type="checkbox" name="events[]" value="<?php echo $key; ?>" <?php checked(isset($my_prices[$key])); ?> />
-                <?php echo $value; ?> | id: <?php echo $key; ?>
+                <?php echo $value; ?>
               </li>
               <br>
               <?php
@@ -42,8 +41,9 @@ function my_prices_plugin_settings_page() {
         </div>
         <?php submit_button(); ?>
       </form>
+    </div>
 
-      <h2>Ваши предложения мероприятий</h2>
+      <h2>Ваши предложения на мероприятия</h2>
 
       <form method="post" action="admin-post.php">
         <?php
@@ -68,14 +68,14 @@ function my_prices_plugin_settings_page() {
               foreach ($my_prices as $key => $value) {
 
                 $offer_array = sht_api_request('<RepertoireId>'. $key .'</RepertoireId>', 'GetOfferListByRepertoireId');
-                if (!count($offer_array->ResponseData->ResponseDataObject->Offer)) {
+                if (gettype($offer_array) == 'string' || !count($offer_array->ResponseData->ResponseDataObject->Offer)) {
                   ?>
                   <div id='message' class='error notice'><p><strong>У мероприятия "<?php echo $options[$key]; ?>" нет предложений.</strong></p></div>
                   <?php
                   continue;
                 }
                 foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
-                  if ((string)$offer->AgentId == '9589') {
+                  if ((string)$offer->AgentId == '10277') {
                     ?>
                     <tr>
                       <td>

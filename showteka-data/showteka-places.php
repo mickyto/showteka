@@ -16,7 +16,7 @@ function api_places_plugin_settings_page() {
           do_settings_sections( 'api-places-plugin-settings-group' );
           ?>
           <input type="hidden" name="action" value="sh_handle_places" />
-          <table border = "1">
+          <table cellpadding="10" border = "1">
             <thead>
               <tr><th></th><th>Название площадки</th></tr>
             </thead>
@@ -44,14 +44,11 @@ function api_places_plugin_settings_page() {
       if (gettype($place_array) == 'string') {
         ?>
         <div id='message' class='error notice'><p><strong>Похоже мы не можем получить ответ от сервера. Проверьте работу API.</strong></p>
-          <p>Текст ошибки:</p><small><?php echo $agent_array; ?></small>
+          <p>Текст ошибки:</p><small><?php echo $place_array; ?></small>
         </div>
         <?php
       }
       ?>
-      <?php $sectors = get_option( 'sectors' ); ?>
-      <pre><?php print_r($places); ?></pre>
-      <pre><?php print_r($sectors); ?></pre>
     </div>
   </div>
   <?php

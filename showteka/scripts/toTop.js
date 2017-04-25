@@ -20,4 +20,12 @@ $(document).ready(function () {
     $("#close-alert").click(function () {
         $(".woocommerce-error, .woocommerce-message").css("display", "none");
     });
+
+    if (window.location.pathname == '/') {
+        $('#header-bg').css('height', 600);
+        $('#to-index').css('display', 'none');
+    }
+    else {
+        $('#header-bg').css('height', 340).css('box-shadow', 'inset 0px -320px 74px -207px #fff')
+    }
 });

@@ -1,15 +1,5 @@
 <?php
-function testRange($int){
 
-  $ranges  = get_option( 'prices' );
-  foreach ($ranges as $range => $addition) {
-    $limits = explode("-", $range);
-    if ($limits[0] <= $int && $int < $limits[1]) {
-      return $int + $addition;
-    }
-  }
-  return $int;
-}
 
 function insert_product_variations($post_id, $variations) {
   foreach ($variations as $index => $variation) {

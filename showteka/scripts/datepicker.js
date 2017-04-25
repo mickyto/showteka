@@ -1,17 +1,13 @@
-$(document).ready(function() {
+jQuery(document).ready(function($) {
     $(function() {
-        $("#datepicker-u").datepicker({
+        $(".datepicker-u").datepicker({
             "dateFormat" : "d MM, yy",
-            "altField" : "#datepicker",
+            "altField" : ".datepicker",
             "altFormat" : "yy-mm-dd",
             "duration" : 200,
             "onSelect" : function () {
-                $("#datepicker-u").attr("placeholder", "")
+                $(".datepicker-u").attr("placeholder", "")
             }
-        });
-        $(".my_datepicker").datepicker({
-            "dateFormat" : "dd-mm-yy",
-            "duration" : 200
         });
         (function() {
             $.datepicker.regional.ru = {

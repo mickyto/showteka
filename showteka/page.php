@@ -18,7 +18,8 @@
 get_header(); ?>
 
 <div id="primary" class="content-area">
-	<div id="content" role="main"><?php
+	<div id="content" role="main">
+		<h1><?php echo get_the_title(); ?></h1><?php
 
 	if (!is_cart() && is_page() && isset($_GET['title'])) {
 		echo "<div class=\"banner-vert\">" . do_shortcode('[crellyslider alias="баннер-верт-1"]'), do_shortcode('[crellyslider alias="баннер-верт-2"]') . "</div>";

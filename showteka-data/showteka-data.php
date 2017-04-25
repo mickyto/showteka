@@ -21,6 +21,8 @@ include('inc/api-request.php');
 include('inc/data-updater.php');
 include('my-prices.php');
 include('inc/my-tickets.php');
+include('showteka-tickets.php');
+include('inc/add-tickets.php');
 
 add_filter( 'cron_schedules', 'true_moi_interval');
 function true_moi_interval( $raspisanie ) {
@@ -38,8 +40,28 @@ if( !wp_next_scheduled('showteka_hook', $parametri ) )
 
 add_action( 'showteka_hook', 'showteka_update_tickets', 10, 3 );
 
+
+// remove old dates
+if( !wp_next_scheduled('sht_clear_date_terms_hook') )
+	wp_schedule_event( time(), 'daily', 'sht_clear_date_terms_hook' );
+
+add_action( 'sht_clear_date_terms_hook', 'showteka_remove_old_dates', 10, 3 );
+function showteka_remove_old_dates() {
+	$terms = get_terms( array(
+    'taxonomy' => 'pa_date',
+    'hide_empty' => false,
+  ) );
+  $date = date('Y-m-d-00-00-00' );
+  foreach ($terms as $value) {
+    if ($value->slug < $date) {
+      wp_delete_term( $value->term_id, 'pa_date' );
+    }
+  }
+}
+
 // create custom plugin settings menu
 add_action('admin_menu', 'api_data_plugin_menu');
 add_action('admin_post_sh_create_products_from_api', 'process_sh_api_options' );
 add_action('admin_post_sh_handle_places', 'process_sh_update_sectors' );
 add_action('admin_post_sh_set_prices_for_my_tickets', 'process_sh_my_prices' );
+add_action('admin_post_sh_manually_add_tickets', 'process_sh_add_tickets' );

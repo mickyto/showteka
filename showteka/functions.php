@@ -3,6 +3,7 @@
 add_theme_support('menus');
 add_theme_support('widgets');
 
+
 add_action( 'after_setup_theme', 'woocommerce_support' );
 function woocommerce_support() {
 	add_theme_support( 'woocommerce' );
@@ -35,41 +36,37 @@ function admin_style() {
 
 add_action('wp_enqueue_scripts', 'c2h_styles');
 function c2h_styles() {
+	wp_enqueue_script(
+		'field-date-js',
+		get_template_directory_uri() . '/scripts/datepicker.js',
+		array('jquery', 'jquery-ui-core', 'jquery-ui-datepicker'),
+		time(),
+		true
+	);
+	wp_enqueue_style('jquery-datepicker', get_template_directory_uri() . '/jqueryui/jquery-ui.min.css');
+
 	wp_enqueue_style('style_css', get_template_directory_uri() . '/style.css?v=44');
-}
-
-add_action('wp_enqueue_scripts', 'c2h_scripts');
-function c2h_scripts() {
 	wp_enqueue_script('to_top', get_template_directory_uri() . '/scripts/toTop.js', 'jquery', '', false );
-}
-
-// Hook in
-add_filter( 'woocommerce_checkout_fields' , 'custom_override_checkout_fields' );
-function custom_override_checkout_fields( $fields ) {
-	$fields['order']['order_comments']['placeholder'] = '';
-	$fields['billing']['billing_address_1']['label'] = 'Адрес доставки';
-	$fields['billing']['billing_address_1']['placeholder'] = '';
-	unset($fields['billing']['billing_company']);
-	unset($fields['billing']['billing_address_2']);
-	unset($fields['billing']['billing_state']);
-	unset($fields['billing']['billing_postcode']);
-	unset($fields['billing']['billing_city']);
-	return $fields;
 }
 
 // Make billing fields not required in checkout
 add_filter( 'woocommerce_billing_fields', 'wc_npr_filter_phone', 10, 1 );
 function wc_npr_filter_phone( $address_fields ) {
-	$address_fields['billing_state']['required'] = false;
-	$address_fields['billing_last_name']['required'] = false;
-	$address_fields['billing_address_1']['required'] = false;
-	$address_fields['billing_city']['required'] = false;
-	$address_fields['billing_postcode']['required'] = false;
-	$address_fields['billing_country']['required'] = false;
+	$address_fields['billing_last_name']['required'] = '';
+	$address_fields['billing_address_1']['required'] = '';
+	$address_fields['billing_address_1']['label'] = 'Адрес доставки';
+	$address_fields['billing_address_1']['placeholder'] = '';
+	unset($address_fields['billing_company']);
+	unset($address_fields['billing_address_2']);
+	unset($address_fields['billing_state']);
+	unset($address_fields['billing_postcode']);
+	unset($address_fields['billing_city']);
+	unset($address_fields['billing_country']);
 	return $address_fields;
 }
 
 // Remove actions
+remove_action( 'woocommerce_after_single_product_summary', 'woocommerce_output_related_products', 20 );
 remove_action('woocommerce_before_shop_loop', 'woocommerce_result_count', 20);
 remove_action('woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30);
 remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40);
@@ -90,18 +87,12 @@ function woo_custom_product_add_to_cart_text() {
 	return __( 'Купить билеты', 'woocommerce' );
 }
 
-// Remove reviews
+// Remove reviews and descroption
 add_filter('woocommerce_product_tabs', 'wcs_woo_remove_reviews_tab', 98);
 function wcs_woo_remove_reviews_tab($tabs) {
 	unset($tabs['reviews']);
 	unset( $tabs['description'] );
 	return $tabs;
-}
-
-// Remove related products
-add_filter('woocommerce_related_products_args','wc_remove_related_products', 10);
-function wc_remove_related_products($args) {
-	return array();
 }
 
 // Hide page title
@@ -123,17 +114,6 @@ function add_banners() {
 	echo '<script src="' . $ss_url . '/scripts/insertBanners.js?v=6"></script>';
 }
 
-add_action( 'woocommerce_archive_description', 'category_loop_title', 12 );
-function category_loop_title() {
-	if ( is_product_category() ){
-		global $wp_query;
-		$cat = $wp_query->get_queried_object();
-		if ($cat->parent == 10) {
-			echo '<div class="popular"><p class="title">Афиша мероприятий театра:</p><hr></div>';
-		}
-	}
-}
-
 // Display popular product
 add_action( 'woocommerce_after_single_product_summary', 'add_popular_events', 50 );
 function add_popular_events() {
@@ -142,12 +122,6 @@ function add_popular_events() {
 	<hr />"
 	. do_shortcode('[product_category category="Популярные"]') .
 	"</div>";
-}
-
-// Remove product quantity for order
-add_filter( 'woocommerce_is_sold_individually', 'wc_remove_all_quantity_fields', 10, 2 );
-function wc_remove_all_quantity_fields( $return, $product ) {
-	return true;
 }
 
 // Add vertical banners
@@ -184,25 +158,39 @@ function calculate_totals($Cart) {
 
 // Make order throught API
 add_action('woocommerce_checkout_process', 'my_custom_checkout_field_process');
-
 function my_custom_checkout_field_process() {
 
 	$cart_items = WC()->cart->cart_contents;
 
 	foreach ($cart_items as $cart_item) {
 
+		$data = $cart_item['variation'];
+
+		if (isset($data['attribute_pa_my_offer'])) {
+			$tickets = get_option( 'tickets' );
+			$places = $tickets[$cart_item['product_id']][$data['attribute_pa_my_offer']]['places'];
+
+			if(($key = array_search($data['attribute_pa_place'], $places)) !== false) {
+				unset($places[$key]);
+				$places = array_values($places);
+			}
+			$tickets[$cart_item['product_id']][$data['attribute_pa_my_offer']]['places'] = $places;
+			update_option( 'tickets', $tickets );
+			return;
+		}
+
 		$sectors = get_option( 'sectors' );
 		$repertoire_id = get_post_meta( $cart_item['product_id'], 'wccaf_api_id', true );
-		$attribute_term = get_term_by('slug', $cart_item['variation']['attribute_pa_date'], 'pa_date');
-		$sector_id = array_search($cart_item['variation']['attribute_pa_sector'], $sectors);
+		$attribute_term = get_term_by('slug', $data['attribute_pa_date'], 'pa_date');
+		$sector_id = array_search($data['attribute_pa_sector'], $sectors);
 
-		// Check if ofаer item is available
+		// Check if offer item is available
 		$offer_request = sht_api_request('
 		<RepertoireId>'. $repertoire_id .'</RepertoireId>
 		<EventDateTime>'. $attribute_term->name .'</EventDateTime>
 		<SectorId>'. $sector_id .'</SectorId>
-		<Row>'. $cart_item['variation']['attribute_pa_row'] .'</Row>
-		<Seat>'. $cart_item['variation']['attribute_pa_place'] .'</Seat>',
+		<Row>'. $data['attribute_pa_row'] .'</Row>
+		<Seat>'. $data['attribute_pa_place'] .'</Seat>',
 		'GetOfferIdBySeatInfo');
 
 		if ($offer_request->ResponseResult->Code == 0) {
@@ -226,6 +214,9 @@ function custom_pre_get_posts_query( $q ) {
 	if ( ! $q->is_main_query() ) return;
 	if ( ! $q->is_post_type_archive() ) return;
 	if ( ! is_admin() && is_shop() ) {
+
+		$q->set('orderby', 'menu_order');
+		$q->set('order', 'DESC');
 		$q->set( 'tax_query', array(array(
 			'taxonomy' => 'product_cat',
 			'field' => 'slug',
@@ -236,20 +227,19 @@ function custom_pre_get_posts_query( $q ) {
 
 function testRange($int){
 
-  $ranges  = get_option( 'prices' );
-  foreach ($ranges as $range => $addition) {
-    $limits = explode("-", $range);
-    if ($limits[0] <= $int && $int < $limits[1]) {
-      return $int + $addition;
-    }
-  }
-  return $int;
+	$ranges  = get_option( 'prices' );
+	foreach ($ranges as $range => $addition) {
+		$limits = explode("-", $range);
+		if ($limits[0] <= $int && $int < $limits[1]) {
+			return $int + $addition;
+		}
+	}
+	return $int;
 }
 
 function place_handler($places) {
 	$groups = array();
-	for($i = 0; $i < count($places); $i++)
-	{
+	for ($i = 0; $i < count($places); $i++) {
 		if($i > 0 && ($places[$i - 1] == $places[$i] - 1))
 		array_push($groups[count($groups) - 1], $places[$i]);
 		else // First value or no match, create a new group
@@ -285,7 +275,7 @@ function woocommerce_grouped_add_to_cart() {
 		<div class="where"><q><?php echo $place ?></q>
 			<p class="address"><?php echo get_post_meta(get_the_ID(), 'wccaf_address', true) ?></p>
 		</div>
-		<div class="date"><?php echo get_post_meta(get_the_ID(), 'wccaf_date', true) ?></div><?php
+		<div class="sht-date"><?php echo get_post_meta(get_the_ID(), 'wccaf_date', true) ?></div><?php
 	} ?>
 
 	<div class="description"><?php echo the_content(); ?></div><?php
@@ -344,15 +334,17 @@ function woocommerce_grouped_add_to_cart() {
 
 // Main fuction for showing product information
 function woocommerce_variable_add_to_cart() {
-	global $product, $post;
+	global $product;
+	$tickets = get_option( 'tickets' );
+	$theid = get_the_ID();
 
-	$place = get_post_meta(get_the_ID(), 'wccaf_place', true);
+	$place = get_post_meta($theid, 'wccaf_place', true);
 	if ($place) { ?>
 		<div class="where"><q><?php echo $place ?></q>
-			<p class="address"><?php echo get_post_meta(get_the_ID(), 'wccaf_address', true) ?></p>
+			<p class="address"><?php echo get_post_meta($theid, 'wccaf_address', true) ?></p>
 		</div><?php
 	} ?>
-	<div class="date"><?php echo get_post_meta(get_the_ID(), 'wccaf_date', true) ?></div>
+	<div class="sht-date"><?php echo get_post_meta($theid, 'wccaf_date', true) ?></div>
 	<div class="description"><?php echo the_content(); ?></div><?php
 
 	$attachment_ids = $product->get_gallery_attachment_ids();
@@ -362,8 +354,8 @@ function woocommerce_variable_add_to_cart() {
 		</div><?php
 	}
 
-	$api_id = get_post_meta( $post->ID, 'wccaf_api_id', true );
-	$terms = wp_get_post_terms( $post->ID, 'pa_date' );
+	$api_id = get_post_meta( $theid, 'wccaf_api_id', true );
+	$terms = wp_get_post_terms( $theid, 'pa_date' );
 
 	$Fast_order = '<div class="action-buttons">
 	<a href="#fast-order" class="purple-b btn-further"><span class="triangle"></span>Оставить заявку</a>
@@ -373,29 +365,33 @@ function woocommerce_variable_add_to_cart() {
 	</div>
 	<p class="no-tickets">Не найдено доступных билетов. Можете оставить заявку.</p>';
 
-	if (!$api_id || count($terms) == 0) {
+	if (count($terms) == 0 && empty($tickets[$theid])) {
 		echo $Fast_order;
 		return;
 	}
 
-	if (isset($_GET['date']) || (count($terms) == 1 && !isset($_GET['offer']))) {
-
-		$date_str = isset($_GET['date']) ? $_GET['date'] : $terms[0]->name;
-		$offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>
-		<EventDateTime>'. $date_str .'</EventDateTime>',
-		'GetOfferListByEventInfo');
-
-		if (!count($offer_array->ResponseData->ResponseDataObject->Offer)) {
-			echo $Fast_order;
-			return;
+	if (!empty($tickets[$theid])) {
+		$my_date = array();
+		foreach ($tickets[$theid] as $my_offer) {
+			$my_date[] = $my_offer['date'];
 		}
-	} ?>
-
+		$my_date = array_unique($my_date);
+	}
+	?>
 	<div id="announce"><?php
 
-	if (count($terms) > 1 && count($_GET) == 0) {
+	// Render dates
+	do {
+		if ( count($_GET) != 0  )  break;
+		if ( count($terms) == 1 && isset($my_date) && $terms[0]->name == $my_date[0] )  break;
+		if ( count($terms) == 1 && !isset($my_date) ) break;
+		if ( count($terms) == 0 && isset($my_date) && count($my_date) == 1 ) break;
 
 		foreach ($terms as $value) {
+
+			if (isset($my_date) && ($my_key = array_search($value->name, $my_date)) !== false) {
+				unset($my_date[$my_key]);
+			}
 
 			$date = format_date($value->name); ?>
 
@@ -403,7 +399,7 @@ function woocommerce_variable_add_to_cart() {
 				<div class="offer-date">
 					<table>
 						<td class="post-title">
-							<h2><?php echo $post->post_title; ?></h2><br>
+							<h2><?php echo get_the_title(); ?></h2><br>
 							<p><?php echo $date ?></p>
 						</td>
 						<td class="post-button">
@@ -412,73 +408,186 @@ function woocommerce_variable_add_to_cart() {
 					</table>
 				</div>
 			</div><?php
-		} ?>
-	</div><?php
-	return;
-}
+		}
 
-$sectors = get_option( 'sectors' );
-$my_prices = get_option( 'my-prices' );
+		if ( !isset($my_date) || count($my_date) == 0 ) break;
 
-if (isset($_GET['date']) || (count($terms) == 1 && !isset($_GET['offer']))) { ?>
+		foreach ($my_date as $value) {
+			$date = format_date($value); ?>
 
-	<table class="table-head">
-		<tr><td>СЕКТОР</td><td>РЯД / ЛОЖА</td><td>МЕСТА</td><td>СТОИМОСТЬ</td><td></td></tr>
-	</table><?php
-	foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
-		if (in_array($offer->AgentId, get_option( 'api_agents' ))) {
-			$sector = $sectors[(string)$offer->SectorId];
-			$sht_price = isset($my_prices[$api_id][(string)$offer->Id]) ? $my_prices[$api_id][(string)$offer->Id] : testRange($offer->AgentPrice);
-
-			?>
 			<div class="var">
-				<div class="shadow">
-					<div class="table-item1"><?php echo $sector; ?></div>
-					<div class="table-item2"><?php echo $offer->Row; ?></div>
-					<div class="table-item3"><?php echo place_handler((array)$offer->SeatList->Item); ?></div>
-					<div class="table-item4"><?php echo $sht_price; ?></div>
-					<div class="table-item5">
-						<a href="<?php echo get_permalink(); ?>?offer=<?php echo $offer->Id; ?>">Выбрать билет</a>
-					</div>
+				<div class="offer-date">
+					<table>
+						<td class="post-title">
+							<h2><?php echo get_the_title(); ?></h2><br>
+							<p><?php echo $date ?></p>
+						</td>
+						<td class="post-button">
+							<a href="<?php echo get_permalink(); ?>?my-date=<?php echo $value; ?>">Купить билеты</a>
+						</td>
+					</table>
 				</div>
 			</div><?php
 		}
-	}
-}
-else if (isset($_GET['offer'])) { ?>
-	<table class="table-head">
-		<tr><td>СЕКТОР</td><td>РЯД / ЛОЖА</td><td>МЕСТО</td><td>СТОИМОСТЬ</td><td></td></tr>
-	</table><?php
-	$offer_object = sht_api_request('<OfferId>'. $_GET['offer'] .'</OfferId>', 'GetOfferById');
-	$offer = $offer_object->ResponseData->ResponseDataObject->Offer;
-	$sector = $sectors[(string)$offer->SectorId];
-	$sht_price = isset($my_prices[$api_id][(string)$offer->Id]) ? $my_prices[$api_id][(string)$offer->Id] : testRange($offer->AgentPrice);
 
-	foreach ($offer->SeatList->Item as $item) { ?>
+	} while (0);
 
-		<div class="var">
-			<form class="variations_form cart shadow" method="post" enctype="multipart/form-data">
-				<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $post->ID ); ?>">
-				<input type="hidden" name="product_id" value="<?php echo esc_attr( $post->ID ); ?>">
-				<input type="hidden" name="attribute_pa_date" value="<?php echo $offer->EventDateTime; ?>">
-				<input type="hidden" name="attribute_pa_sector" value="<?php echo $sector; ?>">
-				<input type="hidden" name="attribute_pa_row" value="<?php echo $offer->Row; ?>">
-				<input type="hidden" name="attribute_pa_place" value="<?php echo $item; ?>">
-				<input type="hidden" name="attribute_pa_price" value="<?php echo $sht_price; ?>">
-				<div class="table-item1"><?php echo $sector; ?></div>
-				<div class="table-item2"><?php echo $offer->Row; ?></div>
-				<div class="table-item3"><?php echo $item; ?></div>
-				<div class="table-item4"><?php echo $sht_price; ?></div>
-				<div class="table-item5">
-					<button type="submit" class="single_add_to_cart_button button alt">
-						<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
-					</button>
-				</div>
-			</form>
-		</div><?php
-	}
-}
-?>
+	// Render offers
+	do {
+		if (isset($_GET['offer']) || isset($_GET['my-offer'])) break;
+		if ( !isset($_GET['date']) && count($terms) > 1 ) break;
+		if ( count($terms) == 1 && isset($my_date) && $terms[0]->name != $my_date[0] ) break;
+		if (isset($_GET['date'])) {
+			$date_str = $_GET['date'];
+		}
+		else {
+			$date_str = isset($my_date) ? $my_date[0] : $terms[0]->name;
+		}
+
+		$offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>
+		<EventDateTime>'. $date_str .'</EventDateTime>',
+		'GetOfferListByEventInfo');
+
+		if (!isset($my_date) && (gettype($offer_array) == 'string' || !count($offer_array->ResponseData->ResponseDataObject->Offer))) {
+			echo $Fast_order;
+			break;
+		}
+
+		$sectors = get_option( 'sectors' );
+		$my_prices = get_option( 'my-prices' );
+		?>
+		<table class="table-head">
+			<tr><td>СЕКТОР</td><td>РЯД / ЛОЖА</td><td>МЕСТО</td><td>СТОИМОСТЬ</td><td></td></tr>
+		</table>
+		<?php
+		if (count($offer_array->ResponseData->ResponseDataObject->Offer)) {
+			foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
+				if (in_array($offer->AgentId, get_option( 'api_agents' )) && count($offer->SeatList->Item)) {
+					$sector = isset($sectors[(string)$offer->SectorId]) ? $sectors[(string)$offer->SectorId] : '';
+					$sht_price = isset($my_prices[$api_id][(string)$offer->Id]) ? $my_prices[$api_id][(string)$offer->Id] : testRange($offer->AgentPrice);
+					?>
+					<div class="var">
+						<div class="shadow">
+							<div class="table-item1"><?php echo $sector; ?></div>
+							<div class="table-item2"><?php echo $offer->Row; ?></div>
+							<div class="table-item3"><?php echo place_handler((array)$offer->SeatList->Item); ?></div>
+							<div class="table-item4"><?php echo $sht_price; ?></div>
+							<div class="table-item5">
+								<a href="<?php echo get_permalink(); ?>?offer=<?php echo $offer->Id; ?>">Выбрать билет</a>
+							</div>
+						</div>
+					</div><?php
+				}
+			}
+		}
+		if (isset($my_date) && count($my_date) == 1) {
+			foreach ($tickets[$theid] as $key => $value) { ?>
+				<div class="var">
+					<div class="shadow">
+						<div class="table-item1"><?php echo $value['sector']; ?></div>
+						<div class="table-item2"><?php echo $value['row']; ?></div>
+						<div class="table-item3"><?php echo place_handler($value['places']); ?></div>
+						<div class="table-item4"><?php echo $value['price']; ?></div>
+						<div class="table-item5">
+							<a href="<?php echo get_permalink(); ?>?my-offer=<?php echo $key; ?>">Выбрать билет</a>
+						</div>
+					</div>
+				</div><?php
+			}
+		}
+		if ( isset($_GET['my-date'])) {
+			foreach ($tickets[$theid] as $key => $value) {
+				if ($value['date'] != $_GET['my-date']) continue; ?>
+				<div class="var">
+					<div class="shadow">
+						<div class="table-item1"><?php echo $value['sector']; ?></div>
+						<div class="table-item2"><?php echo $value['row']; ?></div>
+						<div class="table-item3"><?php echo place_handler($value['places']); ?></div>
+						<div class="table-item4"><?php echo $value['price']; ?></div>
+						<div class="table-item5">
+							<a href="<?php echo get_permalink(); ?>?my-offer=<?php echo $key; ?>">Выбрать билет</a>
+						</div>
+					</div>
+				</div><?php
+			}
+		}
+		?>
+		<script src="<?php get_template_directory_uri(); ?>/wp-content/themes/showteka/scripts/sortSectors.js"></script>
+		<?php
+	} while (0);
+
+	// Render tickets
+	do {
+		if( count($_GET) == 0) break;
+		if( isset($_GET['date'])) break;
+		if( isset($_GET['my-date'])) break;
+
+		$sectors = get_option( 'sectors' );
+		$my_prices = get_option( 'my-prices' );
+		?>
+		<table class="table-head">
+			<tr><td>СЕКТОР</td><td>РЯД / ЛОЖА</td><td>МЕСТО</td><td>СТОИМОСТЬ</td><td></td></tr>
+		</table>
+		<?php
+
+		if( isset($_GET['my-offer'])) {
+			$my_offer= $tickets[$theid][$_GET['my-offer']];
+			foreach ($my_offer['places'] as $item) { ?>
+				<div class="var">
+					<form class="variations_form cart shadow" method="post" enctype="multipart/form-data">
+						<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $theid); ?>">
+						<input type="hidden" name="product_id" value="<?php echo esc_attr( $theid); ?>">
+						<input type="hidden" name="attribute_pa_my_offer" value="<?php echo $_GET['my-offer']; ?>">
+						<input type="hidden" name="attribute_pa_date" value="<?php echo $my_offer['date']; ?>">
+						<input type="hidden" name="attribute_pa_sector" value="<?php echo $my_offer['sector']; ?>">
+						<input type="hidden" name="attribute_pa_row" value="<?php echo $my_offer['row']; ?>">
+						<input type="hidden" name="attribute_pa_place" value="<?php echo $item; ?>">
+						<input type="hidden" name="attribute_pa_price" value="<?php echo $my_offer['price']; ?>">
+						<div class="table-item1"><?php echo $my_offer['sector']; ?></div>
+						<div class="table-item2"><?php echo $my_offer['row']; ?></div>
+						<div class="table-item3"><?php echo $item; ?></div>
+						<div class="table-item4"><?php echo $my_offer['price']; ?></div>
+						<div class="table-item5">
+							<button type="submit" class="single_add_to_cart_button button alt">
+								<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
+							</button>
+						</div>
+					</form>
+				</div><?php
+			}
+		}
+
+		if( isset($_GET['offer'])) {
+			$offer_object = sht_api_request('<OfferId>'. $_GET['offer'] .'</OfferId>', 'GetOfferById');
+			$offer = $offer_object->ResponseData->ResponseDataObject->Offer;
+			$sector = isset($sectors[(string)$offer->SectorId]) ? $sectors[(string)$offer->SectorId] : '';
+			$sht_price = isset($my_prices[$api_id][(string)$offer->Id]) ? $my_prices[$api_id][(string)$offer->Id] : testRange($offer->AgentPrice);
+
+			foreach ($offer->SeatList->Item as $item) { ?>
+				<div class="var">
+					<form class="variations_form cart shadow" method="post" enctype="multipart/form-data">
+						<input type="hidden" name="add-to-cart" value="<?php echo esc_attr( $theid ); ?>">
+						<input type="hidden" name="product_id" value="<?php echo esc_attr( $theid ); ?>">
+						<input type="hidden" name="attribute_pa_date" value="<?php echo $offer->EventDateTime; ?>">
+						<input type="hidden" name="attribute_pa_sector" value="<?php echo $sector; ?>">
+						<input type="hidden" name="attribute_pa_row" value="<?php echo $offer->Row; ?>">
+						<input type="hidden" name="attribute_pa_place" value="<?php echo $item; ?>">
+						<input type="hidden" name="attribute_pa_price" value="<?php echo $sht_price; ?>">
+						<div class="table-item1"><?php echo $sector; ?></div>
+						<div class="table-item2"><?php echo $offer->Row; ?></div>
+						<div class="table-item3"><?php echo $item; ?></div>
+						<div class="table-item4"><?php echo $sht_price; ?></div>
+						<div class="table-item5">
+							<button type="submit" class="single_add_to_cart_button button alt">
+								<?php echo apply_filters('single_add_to_cart_text', __( 'Add to cart', 'woocommerce' ), $product->product_type); ?>
+							</button>
+						</div>
+					</form>
+				</div><?php
+			}
+		}
+	} while (0);
+	?>
 </div><?php
 }
 

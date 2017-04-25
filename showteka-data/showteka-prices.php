@@ -20,10 +20,10 @@ function my_cool_plugin_settings_page() {
 			<form method="post" action="options.php">
 				<?php settings_fields( 'my-cool-plugin-settings-group' ); ?>
 				<?php do_settings_sections( 'my-cool-plugin-settings-group' ); ?>
-				<table class="form-table">
+				<table cellpadding="10" border="1">
 					<?php foreach ($ranges as $range) :?>
 						<tr valign="top">
-							<th scope="row"><?php echo $range ?></th>
+							<td scope="row"><?php echo $range ?></td>
 							<td><input type="number" name="prices[<?php echo $range ?>]" value="<?php echo $prices[$range] ?>" /></td>
 						</tr>
 					<?php endforeach; ?>

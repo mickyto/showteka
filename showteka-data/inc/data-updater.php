@@ -49,8 +49,8 @@ function showteka_update_tickets( $to, $subject ) {
 
       $dates = array();
       $offer_array = sht_api_request('<RepertoireId>'. $api_id .'</RepertoireId>', 'GetOfferListByRepertoireId');
-      if (!count($offer_array->ResponseData->ResponseDataObject->Offer)) continue;
-      
+      if (gettype($offer_array) == 'string' || !count($offer_array->ResponseData->ResponseDataObject->Offer)) continue;
+
       foreach ($offer_array->ResponseData->ResponseDataObject->Offer as $offer) {
         $dates[] = (string) $offer->EventDateTime;
       }

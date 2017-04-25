@@ -20,7 +20,7 @@ function api_data_plugin_settings_page() {
         do_settings_sections( 'my-cool-plugin-settings-group' );
         ?>
         <input type="hidden" name="action" value="sh_create_products_from_api" />
-        <table border = "1">
+        <table cellpadding="10" border = "1">
           <thead>
             <tr>
               <th>Название площадки</th>

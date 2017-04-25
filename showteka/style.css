@@ -58,7 +58,7 @@ div[role=main] { width: 970px; }
 #content, #grid {
     max-width: 970px;
     margin: 0 auto;
-    min-height: 500px;
+    min-height: 1000px;
     width: 100%;
     clear: both;
 }
@@ -151,7 +151,7 @@ table { border-collapse: collapse; }
 }
 
 q,
-.date,
+.sht-date,
 .b-cart a.cart-contents { color: purple }
 
 .b-share a, .b-cart a:hover, .b-share a:hover, .b-share a:hover .g-a-fake { color: #b06eb7; }
@@ -168,7 +168,7 @@ q,
 }
 .b-phones {
     position: absolute;
-    top: -18px;
+    bottom: 70px;
     right: 20px;
     width: 280px;
     font-size: 11px;
@@ -469,6 +469,7 @@ a.woocommerce-LoopProduct-link { text-decoration: none; }
     color: #fff;
     padding:  0px 15px 15px 15px;
     min-width: 1070px;
+    position: relative;
 }
 
 div.product, #footer p { margin: 20px; }
@@ -510,7 +511,7 @@ div.images {
   float: left;
 }
 
-.date, .action-buttons, .where {
+.sht-date, .action-buttons, .where {
     text-align: left;
     padding: 10px 0px;
     display: table;
@@ -615,7 +616,11 @@ div.related.products { clear: both; }
     box-shadow: none !important;
     border-radius: 0px !important;
 }
-#announce { margin-top: 20px; }
+#announce {
+  clear: both;
+  display: inline-block ;
+  margin-top: 20px;
+}
 
 #announce .offer-date {
   font-size: 14px;
@@ -756,6 +761,7 @@ ul.tabs.wc-tabs, #grid p,
 .cart-subtotal,
 p.return-to-shop,
 ul.wc_payment_methods,
+.woocommerce-billing-fields h3,
 /*.woocommerce-info,*/
 .woocommerce-shipping-fields h3,
 #billing_country_field,
@@ -922,4 +928,9 @@ ul.wc_payment_methods,
 
 .s-result {
     padding: 10px;
+}
+
+.live-internet {
+    position: absolute;
+    bottom: 25px;
 }

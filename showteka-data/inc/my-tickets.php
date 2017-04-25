@@ -3,8 +3,6 @@ function process_sh_my_prices() {
 
   $my_prices = get_option( 'my-prices' );
 
-  write_log($_POST);
-
   if (isset($_POST['events'])) {
     foreach ($_POST['events'] as $key) {
       if (!isset($my_prices[$key])) {
