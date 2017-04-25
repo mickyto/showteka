@@ -1,13 +1,6 @@
 <?php
 // Enable menu settings
 add_theme_support('menus');
-add_theme_support('widgets');
-
-
-add_action( 'after_setup_theme', 'woocommerce_support' );
-function woocommerce_support() {
-	add_theme_support( 'woocommerce' );
-}
 
 // Fix Woocommerce styles urls
 add_action('wp_print_styles', 'enqueueStylesFix', 100);
@@ -34,8 +27,8 @@ function admin_style() {
 	wp_enqueue_style('admin-styles', get_template_directory_uri().'/admin.css');
 }
 
-add_action('wp_enqueue_scripts', 'c2h_styles');
-function c2h_styles() {
+add_action('wp_enqueue_scripts', 'add_styles');
+function add_styles() {
 	wp_enqueue_script(
 		'field-date-js',
 		get_template_directory_uri() . '/scripts/datepicker.js',
@@ -44,7 +37,6 @@ function c2h_styles() {
 		true
 	);
 	wp_enqueue_style('jquery-datepicker', get_template_directory_uri() . '/jqueryui/jquery-ui.min.css');
-
 	wp_enqueue_style('style_css', get_template_directory_uri() . '/style.css?v=44');
 	wp_enqueue_script('to_top', get_template_directory_uri() . '/scripts/toTop.js', 'jquery', '', false );
 }
@@ -72,10 +64,7 @@ remove_action('woocommerce_before_shop_loop', 'woocommerce_catalog_ordering', 30
 remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_meta', 40);
 remove_action('woocommerce_single_product_summary', 'woocommerce_template_single_price', 10);
 remove_action( 'woocommerce_product_thumbnails', 'woocommerce_show_product_thumbnails', 20 );
-remove_action( 'woocommerce_single_product_summary', 'woocommerce_variable_add_to_cart');
 remove_action( 'woocommerce_before_main_content', 'woocommerce_breadcrumb', 20, 0 );
-remove_action('woocommerce_sidebar', 'woocommerce_get_sidebar', 10);
-remove_action( 'woocommerce_checkout_order_review', 'woocommerce_order_review', 10 );
 remove_action( 'woocommerce_after_shop_loop_item_title', 'woocommerce_template_loop_price', 10 );
 
 add_filter( 'woocommerce_product_add_to_cart_text', 'woo_custom_product_add_to_cart_text' );
@@ -90,7 +79,6 @@ function woo_custom_product_add_to_cart_text() {
 // Remove reviews and descroption
 add_filter('woocommerce_product_tabs', 'wcs_woo_remove_reviews_tab', 98);
 function wcs_woo_remove_reviews_tab($tabs) {
-	unset($tabs['reviews']);
 	unset( $tabs['description'] );
 	return $tabs;
 }

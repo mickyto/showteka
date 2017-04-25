@@ -1,24 +1,24 @@
 <?php
 function showteka_update_tickets( $to, $subject ) {
 
-  $start = microtime(true);
+  //$start = microtime(true);
   $options = get_option( 'options' );
   $loop = new WP_Query( array( 'post_type' => 'product', 'posts_per_page' => -1 ) );
-  $msg_info = array(
-    'api_offers' => 0,
-    'sht_offers' => 0,
-    'added'      => 0,
-    'added_vars' => 0
-  );
+  // $msg_info = array(
+  //   'api_offers' => 0,
+  //   'sht_offers' => 0,
+  //   'added'      => 0,
+  //   'added_vars' => 0
+  // );
 
   while ( $loop->have_posts() ) : $loop->the_post();
   $theid = get_the_ID();
   $api_id = get_post_meta($theid, 'wccaf_api_id', true );
-  $msg_info['api_offers']++;
+  //$msg_info['api_offers']++;
 
   if ($api_id) {
 
-    $msg_info['sht_offers']++;
+    //$msg_info['sht_offers']++;
 
     if (!in_array($api_id, $options)) {
       $options[$api_id] = get_the_title();
@@ -34,7 +34,7 @@ function showteka_update_tickets( $to, $subject ) {
 
     if (count($variations) == 0) {
 
-      $msg_info['added']++;
+      //$msg_info['added']++;
 
       $date_attribute = array( // Set this attributes array to a key to using the prefix 'pa'
         'pa_date' => array(
@@ -59,7 +59,7 @@ function showteka_update_tickets( $to, $subject ) {
       wp_set_object_terms($theid, $dates, 'pa_date', true);
 
       foreach ($dates as $date) {
-        $msg_info['added_vars']++;
+        //$msg_info['added_vars']++;
         $variation_post = array(
           'post_author'   => 1,
           'post_status'   => 'publish',
@@ -78,14 +78,14 @@ function showteka_update_tickets( $to, $subject ) {
     }
   }
 endwhile;
-$time_elapsed_secs = microtime(true) - $start;
-$msg = '<table border = "1" cellpadding="10">
-<tr><td>Всего мероприятий из апи</td><td>' . $msg_info['api_offers'] . '</td><tr>
-<tr><td>Мероприятия из апи</td><td>' . $msg_info['sht_offers'] . '</td><tr>
-<tr><td>Мероприятия без дат</td><td>' . $msg_info['added'] . '</td><tr>
-<tr><td>Добавленные даты</td><td>' . $msg_info['added_vars'] . '</td><tr>
-<tr><td>Время работы скрипта</td><td>' . $time_elapsed_secs . '</td><tr></table>';
-$headers = array('Content-Type: text/html; charset=UTF-8');
-wp_mail( $to, $subject, $msg, $headers );
+// $time_elapsed_secs = microtime(true) - $start;
+// $msg = '<table border = "1" cellpadding="10">
+// <tr><td>Всего мероприятий из апи</td><td>' . $msg_info['api_offers'] . '</td><tr>
+// <tr><td>Мероприятия из апи</td><td>' . $msg_info['sht_offers'] . '</td><tr>
+// <tr><td>Мероприятия без дат</td><td>' . $msg_info['added'] . '</td><tr>
+// <tr><td>Добавленные даты</td><td>' . $msg_info['added_vars'] . '</td><tr>
+// <tr><td>Время работы скрипта</td><td>' . $time_elapsed_secs . '</td><tr></table>';
+// $headers = array('Content-Type: text/html; charset=UTF-8');
+// wp_mail( $to, $subject, $msg, $headers );
 }
 ?>

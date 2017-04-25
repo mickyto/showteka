@@ -43,7 +43,7 @@ add_action( 'showteka_hook', 'showteka_update_tickets', 10, 3 );
 
 // remove old dates
 if( !wp_next_scheduled('sht_clear_date_terms_hook') )
-	wp_schedule_event( time(), 'daily', 'sht_clear_date_terms_hook' );
+	wp_schedule_event( time(), 'twicedaily', 'sht_clear_date_terms_hook' );
 
 add_action( 'sht_clear_date_terms_hook', 'showteka_remove_old_dates', 10, 3 );
 function showteka_remove_old_dates() {
@@ -57,6 +57,26 @@ function showteka_remove_old_dates() {
       wp_delete_term( $value->term_id, 'pa_date' );
     }
   }
+	wp_mail( 'egayi@yandex.ru', 'Удаление истекших дат', 'Удаление прошло успешно' );
+}
+
+// Remove custom post data along post removing
+add_action( 'before_delete_post', 'my_func' );
+function my_func( $postid ){
+
+	$repertoire_id = get_post_meta( $postid, 'wccaf_api_id', true );
+
+	if (!$repertoire_id) return;
+
+	$options = get_option( 'options' );
+	unset($options[$repertoire_id]);
+	update_option( 'options', $options );
+
+	$my_prices = get_option( 'my-prices' );
+	if (isset($my_prices[$repertoire_id])) {
+		unset($my_prices[$repertoire_id]);
+		update_option( 'my-prices', $my_prices );
+	}
 }
 
 // create custom plugin settings menu

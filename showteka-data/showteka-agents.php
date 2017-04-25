@@ -25,7 +25,9 @@ function api_agents_plugin_settings_page() {
 						</thead>
 						<tbody>
 							<?php
+							$api_agents = array();
 							foreach ($agent_array->ResponseData->ResponseDataObject->Agent as $agent) {
+								$api_agents[] = (string)$agent->Id;
 								?>
 								<tr>
 									<td class="stage">
@@ -43,12 +45,19 @@ function api_agents_plugin_settings_page() {
 				</form>
 				<?php
 			}
+
 			if (gettype($agent_array) == 'string') {
 				?>
 				<div id='message' class='error notice'><p><strong>Похоже мы не можем получить ответ от сервера. Проверьте работу API.</strong></p>
 					<p>Текст ошибки:</p><small><?php echo $agent_array; ?></small>
 				</div>
 				<?php
+			}
+
+			$removed = array_diff($agents, $api_agents);
+			if (count($removed)) {
+				$agents = array_diff($agents, $removed);
+				update_option( 'api_agents', $agents );
 			}
 			?>
 		</div>

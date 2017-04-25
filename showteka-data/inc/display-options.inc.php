@@ -66,7 +66,7 @@ function api_data_plugin_settings_page() {
         </table>
         <?php submit_button(); ?>
       </form>
-      <pre><?php print_r($options); ?></pre>
+      <!-- <pre><?php //print_r($options); ?></pre> -->
     </div>
   </div>
   <?php

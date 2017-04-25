@@ -4,7 +4,6 @@ function my_prices_plugin_settings_page() {
   $options = get_option( 'options' );
   $sectors = get_option( 'sectors' );
   $my_prices = get_option( 'my-prices' );
-
   ?>
   <div class="wrap">
     <div class="postbox-container">
@@ -100,7 +99,6 @@ function my_prices_plugin_settings_page() {
           </table>
           <?php submit_button(); ?>
         </form>
-        <pre><?php print_r($my_prices); ?></pre>
       </div>
     </div>
     <?php
